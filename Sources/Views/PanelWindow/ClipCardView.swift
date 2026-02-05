@@ -9,6 +9,7 @@ struct ClipCardView: View {
 
     @State private var isHovered = false
     @State private var itemBoardColor: Color?
+    @State private var appIconColor: Color?
 
     private let cardRadius: CGFloat = 16
 
@@ -87,7 +88,13 @@ struct ClipCardView: View {
                 appState.deleteItem(item)
             }
         }
-        .task { lookupBoardColor() }
+        .task {
+            lookupBoardColor()
+            if let icon = appIcon,
+               let dominant = ColorExtractor.dominantColor(from: icon) {
+                appIconColor = Color(nsColor: dominant)
+            }
+        }
         .onChange(of: appState.pinboardStore.pinboards) { lookupBoardColor() }
         .onChange(of: appState.pinboardStore.itemAssignmentVersion) { lookupBoardColor() }
     }
@@ -117,7 +124,7 @@ struct ClipCardView: View {
     }
 
     private var headerColor: Color? {
-        effectiveBoardColor
+        effectiveBoardColor ?? appIconColor
     }
 
     // MARK: - Header Row

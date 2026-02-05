@@ -1,12 +1,13 @@
 import SwiftUI
 
-struct CreatePinboardSheet: View {
+struct EditPinboardSheet: View {
     @Environment(\.dismiss) private var dismiss
+    let pinboard: Pinboard
     let usedColors: Set<String>
-    let onCreate: (String, String?, String?) -> Void
+    let onSave: (String, String?) -> Void
 
-    @State private var name = ""
-    @State private var selectedColor = ""
+    @State private var name: String
+    @State private var selectedColor: String
 
     private let colors = [
         "#007AFF", "#FF3B30", "#FF9500", "#FFCC00",
@@ -15,9 +16,17 @@ struct CreatePinboardSheet: View {
         "#BF5AF2", "#FF6482", "#32ADE6", "#AC8E68",
     ]
 
+    init(pinboard: Pinboard, usedColors: Set<String>, onSave: @escaping (String, String?) -> Void) {
+        self.pinboard = pinboard
+        self.usedColors = usedColors
+        self.onSave = onSave
+        _name = State(initialValue: pinboard.name)
+        _selectedColor = State(initialValue: pinboard.color ?? "#007AFF")
+    }
+
     var body: some View {
         VStack(spacing: 16) {
-            Text("Новая доска")
+            Text("Редактировать доску")
                 .font(.headline)
 
             TextField("Название", text: $name)
@@ -31,7 +40,7 @@ struct CreatePinboardSheet: View {
 
                 LazyVGrid(columns: Array(repeating: GridItem(.fixed(28), spacing: 10), count: 8), spacing: 10) {
                     ForEach(colors, id: \.self) { hex in
-                        let isUsed = usedColors.contains(hex)
+                        let isUsed = usedColors.contains(hex) && hex != pinboard.color
                         Button {
                             if !isUsed {
                                 selectedColor = hex
@@ -66,9 +75,9 @@ struct CreatePinboardSheet: View {
 
                 Spacer()
 
-                Button("Создать") {
+                Button("Сохранить") {
                     guard !name.isEmpty else { return }
-                    onCreate(name, nil, selectedColor)
+                    onSave(name, selectedColor)
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
@@ -77,8 +86,5 @@ struct CreatePinboardSheet: View {
         }
         .padding(20)
         .frame(width: 320)
-        .onAppear {
-            selectedColor = colors.first { !usedColors.contains($0) } ?? colors[0]
-        }
     }
 }

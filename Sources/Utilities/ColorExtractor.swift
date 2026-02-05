@@ -20,6 +20,49 @@ struct ColorExtractor {
             || trimmed.range(of: hslPattern, options: .regularExpression) != nil
     }
 
+    /// Returns the average saturated color from an NSImage (skips transparent/gray pixels).
+    static func dominantColor(from image: NSImage) -> NSColor? {
+        let size = NSSize(width: 16, height: 16)
+        guard let bitmapRep = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: Int(size.width),
+            pixelsHigh: Int(size.height),
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: 0,
+            bitsPerPixel: 0
+        ) else { return nil }
+
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: bitmapRep)
+        image.draw(in: NSRect(origin: .zero, size: size),
+                   from: .zero, operation: .copy, fraction: 1.0)
+        NSGraphicsContext.restoreGraphicsState()
+
+        var totalR: CGFloat = 0, totalG: CGFloat = 0, totalB: CGFloat = 0, count: CGFloat = 0
+
+        for x in 0..<Int(size.width) {
+            for y in 0..<Int(size.height) {
+                guard let color = bitmapRep.colorAt(x: x, y: y)?
+                    .usingColorSpace(.deviceRGB) else { continue }
+                guard color.alphaComponent > 0.3 else { continue }
+                let saturation = max(color.redComponent, color.greenComponent, color.blueComponent)
+                    - min(color.redComponent, color.greenComponent, color.blueComponent)
+                guard saturation > 0.1 else { continue }
+                totalR += color.redComponent
+                totalG += color.greenComponent
+                totalB += color.blueComponent
+                count += 1
+            }
+        }
+
+        guard count > 0 else { return nil }
+        return NSColor(red: totalR / count, green: totalG / count, blue: totalB / count, alpha: 1)
+    }
+
     static func parseHexColor(_ hex: String) -> NSColor? {
         var trimmed = hex.trimmingCharacters(in: .whitespacesAndNewlines)
         trimmed = trimmed.hasPrefix("#") ? String(trimmed.dropFirst()) : trimmed

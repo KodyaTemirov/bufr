@@ -11,6 +11,7 @@ struct ClipPanelView: View {
     @State private var showCreateSheet = false
     @State private var showKeyHints = false
     @State private var boardToDelete: Pinboard?
+    @State private var boardToEdit: Pinboard?
 
     var body: some View {
         ZStack {
@@ -23,8 +24,9 @@ struct ClipPanelView: View {
 
                 // Content: cards
                 cardContent
+                    .frame(maxHeight: .infinity, alignment: .top)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .glassEffect(.regular, in: .rect(cornerRadius: 18))
             .onKeyPress(.space) {
                 guard !displayedItems.isEmpty else { return .ignored }
@@ -81,8 +83,26 @@ struct ClipPanelView: View {
             selectedIndex = 0
         }
         .sheet(isPresented: $showCreateSheet) {
-            CreatePinboardSheet { name, icon, color in
+            CreatePinboardSheet(
+                usedColors: Set(appState.pinboardStore.pinboards.compactMap(\.color))
+            ) { name, icon, color in
                 _ = try? appState.pinboardStore.create(name: name, icon: icon, color: color)
+            }
+        }
+        .sheet(isPresented: .init(
+            get: { boardToEdit != nil },
+            set: { if !$0 { boardToEdit = nil } }
+        )) {
+            if let board = boardToEdit {
+                EditPinboardSheet(
+                    pinboard: board,
+                    usedColors: Set(appState.pinboardStore.pinboards.compactMap(\.color))
+                ) { newName, newColor in
+                    var updated = board
+                    updated.name = newName
+                    updated.color = newColor
+                    try? appState.pinboardStore.update(updated)
+                }
             }
         }
         .confirmationDialog(
@@ -142,6 +162,10 @@ struct ClipPanelView: View {
                             action: { selectBoard(board.id) }
                         )
                         .contextMenu {
+                            Button("Редактировать") {
+                                boardToEdit = board
+                            }
+                            Divider()
                             Button("Удалить", role: .destructive) {
                                 boardToDelete = board
                             }
