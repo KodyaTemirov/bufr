@@ -47,7 +47,11 @@ final class FloatingPanel: NSPanel {
 
     override func orderFrontRegardless() {
         super.orderFrontRegardless()
-        startMonitoringClicks()
+        // Delay monitoring to avoid catching the click that opened the panel
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            guard let self, self.isVisible else { return }
+            self.startMonitoringClicks()
+        }
     }
 
     override func orderOut(_ sender: Any?) {

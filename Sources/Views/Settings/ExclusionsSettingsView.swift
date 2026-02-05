@@ -8,7 +8,7 @@ struct ExclusionsSettingsView: View {
     var body: some View {
         Form {
             Section("Исключённые приложения") {
-                Text("Clipo не будет сохранять данные из буфера обмена этих приложений.")
+                Text("Bufr не будет сохранять данные из буфера обмена этих приложений.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 

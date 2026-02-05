@@ -10,7 +10,7 @@ actor ImageStorage {
     private init() {
         let support = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Clipo", isDirectory: true)
+            .appendingPathComponent("Bufr", isDirectory: true)
 
         imagesDir = support.appendingPathComponent("images", isDirectory: true)
         thumbnailsDir = support.appendingPathComponent("thumbnails", isDirectory: true)

@@ -8,14 +8,14 @@ final class AppDatabase: Sendable {
     static let shared: AppDatabase = {
         let folderURL = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Clipo", isDirectory: true)
+            .appendingPathComponent("Bufr", isDirectory: true)
 
         try! FileManager.default.createDirectory(
             at: folderURL,
             withIntermediateDirectories: true
         )
 
-        let dbURL = folderURL.appendingPathComponent("clipo.sqlite")
+        let dbURL = folderURL.appendingPathComponent("bufr.sqlite")
         let dbQueue = try! DatabaseQueue(path: dbURL.path)
         return AppDatabase(dbQueue: dbQueue)
     }()

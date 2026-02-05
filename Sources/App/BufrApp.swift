@@ -1,12 +1,12 @@
 import SwiftUI
 
 @main
-struct ClipoApp: App {
+struct BufrApp: App {
     @State private var appState = AppState()
     @State private var showOnboarding = false
 
     var body: some Scene {
-        MenuBarExtra("Clipo", systemImage: "clipboard") {
+        MenuBarExtra("Bufr", systemImage: "clipboard") {
             MenuBarView()
                 .environment(appState)
                 .onAppear {
