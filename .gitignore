@@ -1,0 +1,45 @@
+# Swift / SPM
+.build/
+.swiftpm/
+Package.resolved
+
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.moved-aside
+
+# macOS
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+.vscode/
+
+# Archives & builds
+*.app
+*.dSYM.zip
+*.dSYM
+*.dmg
+*.pkg
+*.ipa
+
+# Credentials & environment
+.env
+*.pem
+*.p12
+*.key
+
+# Local agent configs
+.agents/
