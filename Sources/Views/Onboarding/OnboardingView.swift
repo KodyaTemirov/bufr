@@ -9,15 +9,15 @@ struct OnboardingView: View {
     private let pages: [OnboardingPage] = [
         OnboardingPage(
             icon: "clipboard",
-            title: "Добро пожаловать в Clipo",
+            title: "Добро пожаловать в Bufr",
             subtitle: "Бесплатный менеджер буфера обмена для macOS",
-            description: "Clipo автоматически сохраняет всё, что вы копируете — текст, изображения, файлы, ссылки и цвета."
+            description: "Bufr автоматически сохраняет всё, что вы копируете — текст, изображения, файлы, ссылки и цвета."
         ),
         OnboardingPage(
             icon: "command",
             title: "Быстрый доступ",
             subtitle: "⌘⇧V — ваш горячий клавиш",
-            description: "Нажмите ⌘⇧V в любом приложении, чтобы открыть панель Clipo. Используйте стрелки для навигации и Enter для вставки."
+            description: "Нажмите ⌘⇧V в любом приложении, чтобы открыть панель Bufr. Используйте стрелки для навигации и Enter для вставки."
         ),
         OnboardingPage(
             icon: "magnifyingglass",

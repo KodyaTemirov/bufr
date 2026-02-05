@@ -68,7 +68,7 @@ struct ClipCardView: View {
                             do {
                                 try appState.pinboardStore.addClip(item.id, to: board.id)
                             } catch {
-                                print("[Clipo] Failed to add clip to board: \(error)")
+                                print("[Bufr] Failed to add clip to board: \(error)")
                             }
                         } label: {
                             Label(board.name, systemImage: "circle.fill")

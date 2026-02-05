@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Clipo is a free, open-source, native macOS clipboard manager built with Swift and SwiftUI. It aims to replicate the visual clipboard history experience of Paste (pasteapp.io) — horizontal card ribbon, pinboards, fuzzy search — while being completely free and privacy-focused (all data stored locally).
+Bufr is a free, open-source, native macOS clipboard manager built with Swift and SwiftUI. It aims to replicate the visual clipboard history experience of Paste (pasteapp.io) — horizontal card ribbon, pinboards, fuzzy search — while being completely free and privacy-focused (all data stored locally).
 
-The project specification is in `doc.md` (written in Russian). No source code has been implemented yet.
+The project specification is in `doc.md` (written in Russian).
 
 ## Tech Stack
 
@@ -20,27 +20,23 @@ The project specification is in `doc.md` (written in Russian). No source code ha
 
 ## Build & Run
 
-Once the Xcode project is created:
-
 ```bash
 # Build from command line
-xcodebuild -scheme Clipo -configuration Debug build
-
-# Run tests
-xcodebuild -scheme Clipo -configuration Debug test
+swift build
 
 # Build for release
-xcodebuild -scheme Clipo -configuration Release build
-```
+swift build -c release
 
-Or open `Clipo.xcodeproj` / `Clipo.xcworkspace` in Xcode and use ⌘B / ⌘R.
+# Run debug binary
+.build/debug/Bufr
+```
 
 ## Architecture
 
 The app follows a layered architecture with clear separation between clipboard monitoring, data persistence, and UI:
 
 ```
-App/          → Entry point (ClipoApp.swift), global state (@Observable), menu bar
+App/          → Entry point (BufrApp.swift), global state (@Observable), menu bar
 Core/         → Clipboard polling (NSPasteboard), paste simulation (CGEvent),
                 hotkey registration, app exclusion rules
 Models/       → ClipItem, Pinboard, ContentType enum
@@ -61,13 +57,3 @@ Utilities/    → Content type detection, syntax highlighting, color extraction,
 ### Data Model
 
 SQLite tables: `clip_items` (with FTS5 virtual table for search), `pinboards`, `pinboard_items` (junction), `excluded_apps`. Schema defined in `doc.md` section 4.
-
-## Development Phases
-
-The spec outlines 6 phases. When implementing, follow this order:
-1. **Foundation** — Xcode project, models, GRDB setup, clipboard monitor, menu bar, exclusions
-2. **UI Panel** — NSPanel floating window, horizontal card scroll, hotkey, keyboard nav, animations
-3. **Search & Paste** — FTS5 search bar, filters, CGEvent paste, multi-paste, drag & drop
-4. **Settings & Polish** — Settings window, hotkey customization, auto-launch (SMAppService), themes
-5. **Pinboards** — Board CRUD, tab UI, add-to-board context menu
-6. **Final Polish** — Quick Look, inline editing, onboarding, tests, notarization, DMG

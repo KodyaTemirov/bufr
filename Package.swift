@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "Clipo",
+    name: "Bufr",
     platforms: [
         .macOS(.v26)
     ],
@@ -13,7 +13,7 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "Clipo",
+            name: "Bufr",
             dependencies: [
                 .product(name: "GRDB", package: "GRDB.swift"),
                 .product(name: "HotKey", package: "HotKey"),
