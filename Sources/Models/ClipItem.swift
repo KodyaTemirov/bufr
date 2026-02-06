@@ -14,6 +14,7 @@ struct ClipItem: Identifiable, Equatable {
     var isPinned: Bool
     var isFavorite: Bool
     var hash: String
+    var customTitle: String?
 
     init(
         id: UUID = UUID(),
@@ -27,7 +28,8 @@ struct ClipItem: Identifiable, Equatable {
         createdAt: Date = Date(),
         isPinned: Bool = false,
         isFavorite: Bool = false,
-        hash: String
+        hash: String,
+        customTitle: String? = nil
     ) {
         self.id = id
         self.contentType = contentType
@@ -41,6 +43,7 @@ struct ClipItem: Identifiable, Equatable {
         self.isPinned = isPinned
         self.isFavorite = isFavorite
         self.hash = hash
+        self.customTitle = customTitle
     }
 
     var filePathsArray: [String] {
@@ -63,6 +66,13 @@ struct ClipItem: Identifiable, Equatable {
         }
         return text
     }
+
+    var displayTitle: String {
+        if let title = customTitle, !title.isEmpty {
+            return title
+        }
+        return contentType.displayName
+    }
 }
 
 // MARK: - GRDB
@@ -83,6 +93,7 @@ extension ClipItem: Codable, FetchableRecord, PersistableRecord {
         case isPinned = "is_pinned"
         case isFavorite = "is_favorite"
         case hash
+        case customTitle = "custom_title"
     }
 
     enum CodingKeys: String, CodingKey {
@@ -98,5 +109,6 @@ extension ClipItem: Codable, FetchableRecord, PersistableRecord {
         case isPinned = "is_pinned"
         case isFavorite = "is_favorite"
         case hash
+        case customTitle = "custom_title"
     }
 }

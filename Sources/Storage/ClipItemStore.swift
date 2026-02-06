@@ -175,4 +175,13 @@ final class ClipItemStore {
         }
         try fetchItems()
     }
+
+    func updateCustomTitle(_ item: ClipItem, newTitle: String?) throws {
+        try database.dbQueue.write { db in
+            var updated = item
+            updated.customTitle = (newTitle?.isEmpty == true) ? nil : newTitle
+            try updated.update(db)
+        }
+        try fetchItems()
+    }
 }

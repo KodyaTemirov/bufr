@@ -10,6 +10,8 @@ struct ClipCardView: View {
     let isSelected: Bool
     var boardColor: Color? = nil
 
+    var onRename: ((ClipItem) -> Void)? = nil
+
     @State private var isHovered = false
     @State private var itemBoardColor: Color?
     @State private var appIconColor: Color?
@@ -85,6 +87,10 @@ struct ClipCardView: View {
                 appState.clipboardPaster.copyToClipboard(item)
             }
 
+            Button("Переименовать") {
+                onRename?(item)
+            }
+
             Divider()
 
             Button("Удалить", role: .destructive) {
@@ -136,9 +142,10 @@ struct ClipCardView: View {
         HStack(spacing: 8) {
             // Type name + time
             VStack(alignment: .leading, spacing: 1) {
-                Text(item.contentType.displayName)
+                Text(item.displayTitle)
                     .font(.system(.body, design: .rounded, weight: .semibold))
                     .foregroundStyle(.primary)
+                    .lineLimit(1)
 
                 Text(relativeTime)
                     .font(.system(.subheadline, design: .rounded))

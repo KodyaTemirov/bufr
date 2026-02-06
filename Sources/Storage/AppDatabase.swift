@@ -119,6 +119,27 @@ final class AppDatabase: Sendable {
             }
         }
 
+        migrator.registerMigration("v2_addCustomTitle") { db in
+            try db.alter(table: "clip_items") { t in
+                t.add(column: "custom_title", .text)
+            }
+
+            // Drop old FTS5 sync triggers before rebuilding
+            try db.execute(sql: "DROP TRIGGER IF EXISTS __clip_items_fts_ai")
+            try db.execute(sql: "DROP TRIGGER IF EXISTS __clip_items_fts_ad")
+            try db.execute(sql: "DROP TRIGGER IF EXISTS __clip_items_fts_au")
+            try db.drop(table: "clip_items_fts")
+
+            // Recreate FTS5 table with custom_title for search
+            try db.create(virtualTable: "clip_items_fts", using: FTS5()) { t in
+                t.synchronize(withTable: "clip_items")
+                t.tokenizer = .unicode61()
+                t.column("text_content")
+                t.column("source_app_name")
+                t.column("custom_title")
+            }
+        }
+
         return migrator
     }
 }

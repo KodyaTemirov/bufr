@@ -5,6 +5,7 @@ struct ClipCardStripView: View {
     @Binding var selectedIndex: Int
     var boardColor: Color? = nil
     let onPaste: (ClipItem) -> Void
+    var onRename: ((ClipItem) -> Void)? = nil
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -14,7 +15,8 @@ struct ClipCardStripView: View {
                         ClipCardView(
                             item: item,
                             isSelected: index == selectedIndex,
-                            boardColor: boardColor
+                            boardColor: boardColor,
+                            onRename: onRename
                         )
                         .id(item.id)
                         .onTapGesture {

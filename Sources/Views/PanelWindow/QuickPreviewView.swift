@@ -71,6 +71,13 @@ struct QuickPreviewView: View {
 
                 // Meta info
                 HStack(spacing: 12) {
+                    if let title = item.customTitle, !title.isEmpty {
+                        Text(title)
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.primary)
+                    }
+
                     Label(item.contentType.displayName, systemImage: item.contentType.systemImage)
                         .font(.caption)
                         .foregroundStyle(.secondary)

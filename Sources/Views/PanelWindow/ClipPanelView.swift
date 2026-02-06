@@ -12,6 +12,8 @@ struct ClipPanelView: View {
     @State private var showKeyHints = false
     @State private var boardToDelete: Pinboard?
     @State private var boardToEdit: Pinboard?
+    @State private var itemToRename: ClipItem?
+    @State private var renamingTitle: String = ""
 
     var body: some View {
         ZStack {
@@ -104,6 +106,42 @@ struct ClipPanelView: View {
                     try? appState.pinboardStore.update(updated)
                 }
             }
+        }
+        .sheet(isPresented: .init(
+            get: { itemToRename != nil },
+            set: { if !$0 { itemToRename = nil } }
+        )) {
+            VStack(spacing: 16) {
+                Text("Переименовать")
+                    .font(.headline)
+
+                TextField("Название", text: $renamingTitle)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { saveRename() }
+
+                HStack {
+                    if itemToRename?.customTitle != nil {
+                        Button("Сбросить") {
+                            renamingTitle = ""
+                            saveRename()
+                        }
+                        .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Button("Отмена") {
+                        itemToRename = nil
+                    }
+
+                    Button("Сохранить") {
+                        saveRename()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+            .padding(24)
+            .frame(width: 300)
         }
         .confirmationDialog(
             "Удалить доску «\(boardToDelete?.name ?? "")»?",
@@ -243,6 +281,10 @@ struct ClipPanelView: View {
                     boardColor: selectedBoardColor,
                     onPaste: { item in
                         appState.pasteItem(item)
+                    },
+                    onRename: { item in
+                        renamingTitle = item.customTitle ?? ""
+                        itemToRename = item
                     }
                 )
             }
@@ -320,6 +362,13 @@ struct ClipPanelView: View {
     private func pasteSelected(plainText: Bool) {
         guard let item = displayedItems[safe: selectedIndex] else { return }
         appState.pasteItem(item, asPlainText: plainText)
+    }
+
+    private func saveRename() {
+        guard let item = itemToRename else { return }
+        let title = renamingTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        try? appState.clipItemStore.updateCustomTitle(item, newTitle: title.isEmpty ? nil : title)
+        itemToRename = nil
     }
 
     // MARK: - Subviews
