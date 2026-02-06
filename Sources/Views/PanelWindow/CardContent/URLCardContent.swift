@@ -10,7 +10,7 @@ struct URLCardContent: View {
                 .foregroundStyle(.blue)
 
             Text(text)
-                .font(.system(.subheadline, design: .rounded))
+                .font(.system(.body, design: .rounded))
                 .lineLimit(4)
                 .foregroundStyle(.blue)
                 .underline()

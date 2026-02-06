@@ -22,6 +22,11 @@ struct CreatePinboardSheet: View {
 
             TextField("Название", text: $name)
                 .textFieldStyle(.roundedBorder)
+                .onSubmit {
+                    guard !name.isEmpty else { return }
+                    onCreate(name, nil, selectedColor)
+                    dismiss()
+                }
 
             // Color picker
             VStack(alignment: .leading, spacing: 6) {

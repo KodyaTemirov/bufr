@@ -144,4 +144,12 @@ final class PanelManager {
     var isVisible: Bool {
         panel?.isVisible ?? false
     }
+
+    func suspendClickMonitoring() {
+        panel?.suspendClickMonitoring()
+    }
+
+    func resumeClickMonitoring() {
+        panel?.resumeClickMonitoring()
+    }
 }

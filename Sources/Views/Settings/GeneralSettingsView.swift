@@ -7,6 +7,10 @@ struct GeneralSettingsView: View {
     @State private var confirmClearHistory = false
     @State private var confirmDeleteBoards = false
     @State private var confirmDeleteAll = false
+    @State private var exportImportError: String?
+    @State private var showExportImportError = false
+    @State private var successMessage: String?
+    @State private var showSuccess = false
 
     var body: some View {
         @Bindable var state = appState
@@ -39,6 +43,17 @@ struct GeneralSettingsView: View {
                 Toggle("Запуск при старте системы", isOn: $state.launchAtLogin)
 
                 Toggle("Звук при копировании", isOn: $state.playCopySound)
+            }
+
+            Section("Доски") {
+                Button("Экспортировать все доски") {
+                    exportAllBoards()
+                }
+                .disabled(appState.pinboardStore.pinboards.isEmpty)
+
+                Button("Импортировать доски...") {
+                    importAllBoards()
+                }
             }
 
             Section("Удаление данных") {
@@ -77,6 +92,53 @@ struct GeneralSettingsView: View {
             }
         } message: {
             Text("Вся история и все доски будут удалены.")
+        }
+        .alert("Ошибка", isPresented: $showExportImportError) {
+            Button("OK") {}
+        } message: {
+            Text(exportImportError ?? "")
+        }
+        .alert("Готово", isPresented: $showSuccess) {
+            Button("OK") {}
+        } message: {
+            Text(successMessage ?? "")
+        }
+    }
+
+    private func exportAllBoards() {
+        Task {
+            do {
+                let url = try await PinboardExportService.exportAllPinboards(
+                    pinboards: appState.pinboardStore.pinboards,
+                    database: appState.database,
+                    imageStorage: ImageStorage.shared
+                )
+                successMessage = "Экспортировано в \(url.path)"
+                showSuccess = true
+            } catch {
+                exportImportError = error.localizedDescription
+                showExportImportError = true
+            }
+        }
+    }
+
+    private func importAllBoards() {
+        Task {
+            do {
+                let imported = try await PinboardExportService.importAllPinboards(
+                    database: appState.database,
+                    pinboardStore: appState.pinboardStore,
+                    imageStorage: ImageStorage.shared
+                )
+                if !imported.isEmpty {
+                    let names = imported.map { "«\($0.name)»" }.joined(separator: ", ")
+                    successMessage = "Импортировано досок: \(imported.count) — \(names)"
+                    showSuccess = true
+                }
+            } catch {
+                exportImportError = error.localizedDescription
+                showExportImportError = true
+            }
         }
     }
 }

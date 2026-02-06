@@ -14,6 +14,10 @@ struct ClipPanelView: View {
     @State private var boardToEdit: Pinboard?
     @State private var itemToRename: ClipItem?
     @State private var renamingTitle: String = ""
+    @State private var exportImportError: String?
+    @State private var showExportImportError = false
+    @State private var importSuccessMessage: String?
+    @State private var showImportSuccess = false
 
     var body: some View {
         ZStack {
@@ -29,7 +33,7 @@ struct ClipPanelView: View {
                     .frame(maxHeight: .infinity, alignment: .top)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .glassEffect(.regular, in: .rect(cornerRadius: 18))
+            .glassEffect(.regular.tint(.white.opacity(0.3)), in: .rect(cornerRadius: 18))
             .onKeyPress(.space) {
                 guard !displayedItems.isEmpty else { return .ignored }
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -164,6 +168,16 @@ struct ClipPanelView: View {
         .task {
             try? appState.pinboardStore.fetchPinboards()
         }
+        .alert("Ошибка", isPresented: $showExportImportError) {
+            Button("OK") {}
+        } message: {
+            Text(exportImportError ?? "")
+        }
+        .alert("Готово", isPresented: $showImportSuccess) {
+            Button("OK") {}
+        } message: {
+            Text(importSuccessMessage ?? "")
+        }
     }
 
     // MARK: - Header
@@ -203,28 +217,31 @@ struct ClipPanelView: View {
                             Button("Редактировать") {
                                 boardToEdit = board
                             }
+                            Button("Экспортировать доску...") {
+                                exportBoard(board)
+                            }
                             Divider()
                             Button("Удалить", role: .destructive) {
                                 boardToDelete = board
                             }
                         }
                     }
+
+                    // Add board button
+                    Button {
+                        showCreateSheet = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(.subheadline, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 28, height: 28)
+                            .glassEffect(.regular, in: .circle)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
 
-            // Add board button
-            Button {
-                showCreateSheet = true
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(.subheadline, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 28, height: 28)
-                    .glassEffect(.regular, in: .circle)
-            }
-            .buttonStyle(.plain)
-
-            // Settings button
+            // Settings
             Button {
                 appState.hidePanel()
                 openSettings()
@@ -369,6 +386,23 @@ struct ClipPanelView: View {
         let title = renamingTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         try? appState.clipItemStore.updateCustomTitle(item, newTitle: title.isEmpty ? nil : title)
         itemToRename = nil
+    }
+
+    private func exportBoard(_ board: Pinboard) {
+        Task {
+            do {
+                let url = try await PinboardExportService.exportPinboard(
+                    board,
+                    database: appState.database,
+                    imageStorage: ImageStorage.shared
+                )
+                importSuccessMessage = "Экспортировано в \(url.path)"
+                showImportSuccess = true
+            } catch {
+                exportImportError = error.localizedDescription
+                showExportImportError = true
+            }
+        }
     }
 
     // MARK: - Subviews

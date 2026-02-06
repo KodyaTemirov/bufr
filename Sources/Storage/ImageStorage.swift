@@ -41,6 +41,12 @@ actor ImageStorage {
 
     // MARK: - Load
 
+    func loadImageData(filename: String) -> Data? {
+        guard isValidFilename(filename) else { return nil }
+        let fileURL = imagesDir.appendingPathComponent(filename)
+        return try? Data(contentsOf: fileURL)
+    }
+
     func loadImage(filename: String) -> NSImage? {
         guard isValidFilename(filename) else { return nil }
         let fileURL = imagesDir.appendingPathComponent(filename)

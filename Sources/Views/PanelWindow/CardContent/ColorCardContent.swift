@@ -18,7 +18,7 @@ struct ColorCardContent: View {
             }
 
             Text(text)
-                .font(.system(.caption, design: .monospaced))
+                .font(.system(.subheadline, design: .monospaced))
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

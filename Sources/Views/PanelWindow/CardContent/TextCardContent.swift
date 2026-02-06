@@ -5,7 +5,7 @@ struct TextCardContent: View {
 
     var body: some View {
         Text(text)
-            .font(.system(.subheadline, design: .monospaced))
+            .font(.system(.body, design: .monospaced))
             .lineLimit(6)
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

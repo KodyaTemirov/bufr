@@ -23,9 +23,9 @@ struct ClipCardView: View {
             // Compact header: icon + meta on left, app icon on right
             headerRow
                 .padding(.horizontal, 12)
-                .padding(.top, 10)
-                .padding(.bottom, 6)
-                .background(headerColor?.opacity(0.4) ?? .clear)
+                .frame(height: 50)
+                .background(headerColor)
+                .clipped()
 
             // Content area
             cardContent
@@ -100,8 +100,15 @@ struct ClipCardView: View {
         .task {
             lookupBoardColor()
             if let icon = appIcon,
-               let dominant = ColorExtractor.dominantColor(from: icon) {
-                appIconColor = Color(nsColor: dominant)
+               let dominant = ColorExtractor.dominantColor(from: icon),
+               let hsb = dominant.usingColorSpace(.deviceRGB) {
+                let saturated = NSColor(
+                    hue: hsb.hueComponent,
+                    saturation: min(hsb.saturationComponent * 1.6, 1.0),
+                    brightness: min(hsb.brightnessComponent * 0.85, 0.85),
+                    alpha: 1.0
+                )
+                appIconColor = Color(nsColor: saturated)
             }
         }
         .onChange(of: appState.pinboardStore.pinboards) { lookupBoardColor() }
@@ -132,8 +139,8 @@ struct ClipCardView: View {
         Color(nsColor: .controlBackgroundColor)
     }
 
-    private var headerColor: Color? {
-        effectiveBoardColor ?? appIconColor
+    private var headerColor: Color {
+        effectiveBoardColor ?? appIconColor ?? Color(nsColor: .darkGray)
     }
 
     // MARK: - Header Row
@@ -144,12 +151,12 @@ struct ClipCardView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(item.displayTitle)
                     .font(.system(.body, design: .rounded, weight: .semibold))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(.white)
                     .lineLimit(1)
 
                 Text(relativeTime)
                     .font(.system(.subheadline, design: .rounded))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.white.opacity(0.7))
             }
 
             Spacer()
@@ -160,12 +167,12 @@ struct ClipCardView: View {
                     .foregroundStyle(.yellow)
             }
 
-            // App icon
+            // App icon — larger than header, clipped at bottom, pushed into corner
             if let icon = appIcon {
                 Image(nsImage: icon)
                     .resizable()
-                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-                    .frame(width: 40, height: 40)
+                    .frame(width: 78, height: 78)
+                    .offset(x: 24)
             }
         }
     }
