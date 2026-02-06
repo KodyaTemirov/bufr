@@ -4,6 +4,8 @@ import SwiftUI
 
 @MainActor @Observable
 final class AppState {
+    static let shared = AppState()
+
     // MARK: - Services
     let database: AppDatabase
     let clipItemStore: ClipItemStore

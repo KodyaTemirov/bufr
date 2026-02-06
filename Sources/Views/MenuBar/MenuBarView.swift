@@ -1,23 +1,23 @@
 import SwiftUI
 
 struct MenuBarView: View {
-    @Environment(AppState.self) private var appState
     @Environment(\.openSettings) private var openSettings
+    @State private var menuItems: [ClipItem] = []
 
     var body: some View {
         VStack(spacing: 0) {
             Button("Открыть панель  ⌘⇧V") {
-                appState.togglePanel()
+                AppState.shared.togglePanel()
             }
 
             Divider()
 
-            if appState.clipItemStore.items.isEmpty {
+            if menuItems.isEmpty {
                 Text("История пуста")
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 8)
             } else {
-                ForEach(appState.clipItemStore.items.prefix(10)) { item in
+                ForEach(menuItems) { item in
                     MenuBarItemRow(item: item) {
                         copyToClipboard(item)
                     }
@@ -27,7 +27,8 @@ struct MenuBarView: View {
             Divider()
 
             Button("Очистить историю...") {
-                appState.clearHistory()
+                AppState.shared.clearHistory()
+                menuItems = []
             }
             .keyboardShortcut("K", modifiers: [.command, .shift])
 
@@ -44,6 +45,9 @@ struct MenuBarView: View {
                 NSApplication.shared.terminate(nil)
             }
             .keyboardShortcut("Q", modifiers: .command)
+        }
+        .onAppear {
+            menuItems = Array(AppState.shared.clipItemStore.items.prefix(10))
         }
     }
 
