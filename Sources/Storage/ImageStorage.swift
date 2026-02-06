@@ -15,8 +15,8 @@ actor ImageStorage {
         imagesDir = support.appendingPathComponent("images", isDirectory: true)
         thumbnailsDir = support.appendingPathComponent("thumbnails", isDirectory: true)
 
-        try? FileManager.default.createDirectory(at: imagesDir, withIntermediateDirectories: true)
-        try? FileManager.default.createDirectory(at: thumbnailsDir, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(at: imagesDir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        try? FileManager.default.createDirectory(at: thumbnailsDir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
     }
 
     // MARK: - Save
@@ -25,6 +25,7 @@ actor ImageStorage {
         let filename = "\(id.uuidString).png"
         let fileURL = imagesDir.appendingPathComponent(filename)
         try data.write(to: fileURL)
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
 
         // Generate thumbnail
         generateThumbnail(from: data, id: id)
@@ -32,9 +33,16 @@ actor ImageStorage {
         return filename
     }
 
+    // MARK: - Validation
+
+    private func isValidFilename(_ filename: String) -> Bool {
+        !filename.contains("/") && !filename.contains("..") && !filename.isEmpty
+    }
+
     // MARK: - Load
 
     func loadImage(filename: String) -> NSImage? {
+        guard isValidFilename(filename) else { return nil }
         let fileURL = imagesDir.appendingPathComponent(filename)
         return NSImage(contentsOf: fileURL)
     }
@@ -48,10 +56,18 @@ actor ImageStorage {
     // MARK: - Delete
 
     func deleteImage(filename: String, id: UUID) {
+        guard isValidFilename(filename) else { return }
         let imageURL = imagesDir.appendingPathComponent(filename)
         let thumbURL = thumbnailsDir.appendingPathComponent("\(id.uuidString)_thumb.png")
         try? FileManager.default.removeItem(at: imageURL)
         try? FileManager.default.removeItem(at: thumbURL)
+    }
+
+    func deleteAllImages() {
+        try? FileManager.default.removeItem(at: imagesDir)
+        try? FileManager.default.removeItem(at: thumbnailsDir)
+        try? FileManager.default.createDirectory(at: imagesDir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        try? FileManager.default.createDirectory(at: thumbnailsDir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
     }
 
     // MARK: - Thumbnail
@@ -79,5 +95,6 @@ actor ImageStorage {
         let filename = "\(id.uuidString)_thumb.png"
         let fileURL = thumbnailsDir.appendingPathComponent(filename)
         try? pngData.write(to: fileURL)
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
     }
 }

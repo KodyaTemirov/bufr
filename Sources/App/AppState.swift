@@ -1,6 +1,9 @@
 import Foundation
+import OSLog
 import ServiceManagement
 import SwiftUI
+
+private let logger = Logger(subsystem: "com.bufr.app", category: "AppState")
 
 @MainActor @Observable
 final class AppState {
@@ -23,10 +26,16 @@ final class AppState {
 
     // MARK: - Settings (persisted via UserDefaults)
     var historyLimit: Int {
-        didSet { UserDefaults.standard.set(historyLimit, forKey: "historyLimit") }
+        didSet {
+            historyLimit = max(100, min(50_000, historyLimit))
+            UserDefaults.standard.set(historyLimit, forKey: "historyLimit")
+        }
     }
     var autoCleanupDays: Int {
-        didSet { UserDefaults.standard.set(autoCleanupDays, forKey: "autoCleanupDays") }
+        didSet {
+            autoCleanupDays = max(1, min(365, autoCleanupDays))
+            UserDefaults.standard.set(autoCleanupDays, forKey: "autoCleanupDays")
+        }
     }
     var playCopySound: Bool {
         didSet {
@@ -57,8 +66,8 @@ final class AppState {
 
         // Load settings from UserDefaults
         let defaults = UserDefaults.standard
-        self.historyLimit = defaults.object(forKey: "historyLimit") as? Int ?? 5000
-        self.autoCleanupDays = defaults.object(forKey: "autoCleanupDays") as? Int ?? 30
+        self.historyLimit = max(100, min(50_000, defaults.object(forKey: "historyLimit") as? Int ?? 5000))
+        self.autoCleanupDays = max(1, min(365, defaults.object(forKey: "autoCleanupDays") as? Int ?? 30))
         self.playCopySound = defaults.bool(forKey: "playCopySound")
         self.panelPosition = PanelPosition(rawValue: defaults.string(forKey: "panelPosition") ?? "") ?? .bottom
         self.launchAtLogin = defaults.bool(forKey: "launchAtLogin")
@@ -84,7 +93,7 @@ final class AppState {
             try clipItemStore.deleteOlderThan(days: autoCleanupDays)
             try clipItemStore.enforceHistoryLimit(historyLimit)
         } catch {
-            print("Failed to initialize: \(error)")
+            logger.error("Failed to initialize: \(error.localizedDescription, privacy: .public)")
         }
 
         // Sync sound setting
@@ -145,9 +154,10 @@ final class AppState {
     func clearHistory() {
         do {
             try clipItemStore.deleteAll()
+            Task { await ImageStorage.shared.deleteAllImages() }
             try clipItemStore.fetchItems()
         } catch {
-            print("Failed to clear history: \(error)")
+            logger.error("Failed to clear history: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -157,7 +167,7 @@ final class AppState {
                 try pinboardStore.delete(board)
             }
         } catch {
-            print("Failed to delete boards: \(error)")
+            logger.error("Failed to delete boards: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -171,7 +181,7 @@ final class AppState {
             try clipItemStore.delete(item)
             try clipItemStore.fetchItems()
         } catch {
-            print("Failed to delete item: \(error)")
+            logger.error("Failed to delete item: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -192,7 +202,7 @@ final class AppState {
                 try SMAppService.mainApp.unregister()
             }
         } catch {
-            print("Failed to update launch at login: \(error)")
+            logger.error("Failed to update launch at login: \(error.localizedDescription, privacy: .public)")
         }
     }
 }

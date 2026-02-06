@@ -68,26 +68,61 @@ final class ClipItemStore {
 
     func deleteOlderThan(days: Int) throws {
         let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date())!
-        _ = try database.dbQueue.write { db in
+        let imageRefs = try database.dbQueue.write { db -> [(String, UUID)] in
+            let itemsToDelete = try ClipItem
+                .filter(ClipItem.Columns.createdAt < cutoffDate)
+                .filter(ClipItem.Columns.isPinned == false)
+                .fetchAll(db)
+
+            let refs = itemsToDelete.compactMap { item -> (String, UUID)? in
+                guard let path = item.imagePath else { return nil }
+                return (path, item.id)
+            }
+
             try ClipItem
                 .filter(ClipItem.Columns.createdAt < cutoffDate)
                 .filter(ClipItem.Columns.isPinned == false)
                 .deleteAll(db)
+
+            return refs
+        }
+
+        if !imageRefs.isEmpty {
+            Task {
+                for (path, id) in imageRefs {
+                    await ImageStorage.shared.deleteImage(filename: path, id: id)
+                }
+            }
         }
     }
 
     func enforceHistoryLimit(_ limit: Int) throws {
-        _ = try database.dbQueue.write { db in
+        let imageRefs = try database.dbQueue.write { db -> [(String, UUID)] in
             let count = try ClipItem.fetchCount(db)
-            if count > limit {
-                let excess = count - limit
-                let oldItems = try ClipItem
-                    .filter(ClipItem.Columns.isPinned == false)
-                    .order(ClipItem.Columns.createdAt.asc)
-                    .limit(excess)
-                    .fetchAll(db)
-                for item in oldItems {
-                    try item.delete(db)
+            guard count > limit else { return [] }
+            let excess = count - limit
+            let oldItems = try ClipItem
+                .filter(ClipItem.Columns.isPinned == false)
+                .order(ClipItem.Columns.createdAt.asc)
+                .limit(excess)
+                .fetchAll(db)
+
+            let refs = oldItems.compactMap { item -> (String, UUID)? in
+                guard let path = item.imagePath else { return nil }
+                return (path, item.id)
+            }
+
+            for item in oldItems {
+                try item.delete(db)
+            }
+
+            return refs
+        }
+
+        if !imageRefs.isEmpty {
+            Task {
+                for (path, id) in imageRefs {
+                    await ImageStorage.shared.deleteImage(filename: path, id: id)
                 }
             }
         }

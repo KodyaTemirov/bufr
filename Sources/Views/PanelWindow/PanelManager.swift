@@ -10,36 +10,40 @@ enum PanelPosition: String, CaseIterable {
 final class PanelManager {
     private var panel: FloatingPanel?
     private var hostingView: NSHostingView<AnyView>?
+    private var currentPosition: PanelPosition = .bottom
+    private var isAnimating = false
 
     var onPanelClose: (() -> Void)?
 
+    /// Returns the screen where the mouse cursor is currently located.
+    private func activeScreen() -> NSScreen? {
+        let mouseLocation = NSEvent.mouseLocation
+        return NSScreen.screens.first { $0.frame.contains(mouseLocation) } ?? NSScreen.main
+    }
+
     func showPanel(content: some View, position: PanelPosition = .bottom) {
-        guard let screen = NSScreen.main else { return }
+        guard !isAnimating, let screen = activeScreen() else { return }
 
+        currentPosition = position
         let panelHeight: CGFloat = 280
+        let horizontalInset: CGFloat = 8
 
-        // Start off-screen for animation
-        let offScreenY: CGFloat
+        let originX = screen.visibleFrame.origin.x + horizontalInset
+        let panelWidth = screen.visibleFrame.width - horizontalInset * 2
+
+        // Short slide (30pt) + fade so animation stays within the current screen
+        let slideOffset: CGFloat = 30
         let targetY: CGFloat
-        let originX: CGFloat
-        let panelWidth: CGFloat
 
         switch position {
         case .bottom:
-            let horizontalInset: CGFloat = 8
-            originX = screen.visibleFrame.origin.x + horizontalInset
-            panelWidth = screen.visibleFrame.width - horizontalInset * 2
-            offScreenY = screen.frame.origin.y - panelHeight
             targetY = screen.frame.origin.y
         case .top:
-            let horizontalInset: CGFloat = 8
-            originX = screen.visibleFrame.origin.x + horizontalInset
-            panelWidth = screen.visibleFrame.width - horizontalInset * 2
-            offScreenY = screen.visibleFrame.origin.y + screen.visibleFrame.height + panelHeight
             targetY = screen.visibleFrame.origin.y + screen.visibleFrame.height - panelHeight - horizontalInset
         }
 
-        let startRect = NSRect(x: originX, y: offScreenY, width: panelWidth, height: panelHeight)
+        let startY = position == .bottom ? targetY - slideOffset : targetY + slideOffset
+        let startRect = NSRect(x: originX, y: startY, width: panelWidth, height: panelHeight)
         let targetRect = NSRect(x: originX, y: targetY, width: panelWidth, height: panelHeight)
 
         let wrappedContent = AnyView(content)
@@ -49,6 +53,7 @@ final class PanelManager {
             if let hostingView {
                 hostingView.rootView = wrappedContent
             }
+            panel.alphaValue = 0.0
             panel.setFrame(startRect, display: false)
             panel.orderFrontRegardless()
             panel.makeKey()
@@ -63,6 +68,7 @@ final class PanelManager {
             hosting.autoresizingMask = [.width, .height]
             newPanel.contentView = hosting
             newPanel.applyCornerMask()
+            newPanel.alphaValue = 0.0
             self.hostingView = hosting
             self.panel = newPanel
             newPanel.orderFrontRegardless()
@@ -70,31 +76,36 @@ final class PanelManager {
         }
 
         // Animate slide in
-        NSAnimationContext.runAnimationGroup { context in
+        isAnimating = true
+        NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.25
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             self.panel?.animator().setFrame(targetRect, display: true)
             self.panel?.animator().alphaValue = 1.0
-        }
+        }, completionHandler: { [weak self] in
+            Task { @MainActor in
+                self?.isAnimating = false
+            }
+        })
     }
 
     func hidePanel() {
-        guard let panel, panel.isVisible else { return }
-        guard let screen = NSScreen.main else {
-            panel.orderOut(nil)
-            return
-        }
+        guard !isAnimating, let panel, panel.isVisible else { return }
 
-        let panelHeight = panel.frame.height
-        let offScreenY = screen.frame.origin.y - panelHeight
+        // Short slide (30pt) + fade out, stays within the current screen
+        let slideOffset: CGFloat = 30
+        let hideY = currentPosition == .bottom
+            ? panel.frame.origin.y - slideOffset
+            : panel.frame.origin.y + slideOffset
 
         let targetRect = NSRect(
             x: panel.frame.origin.x,
-            y: offScreenY,
+            y: hideY,
             width: panel.frame.width,
-            height: panelHeight
+            height: panel.frame.height
         )
 
+        isAnimating = true
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.2
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
@@ -104,6 +115,7 @@ final class PanelManager {
             Task { @MainActor in
                 panel.orderOut(nil)
                 panel.alphaValue = 1.0
+                self?.isAnimating = false
                 self?.onPanelClose?()
             }
         })

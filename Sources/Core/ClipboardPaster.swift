@@ -10,11 +10,28 @@ final class ClipboardPaster {
 
         if asPlainText {
             pasteboard.setString(item.textContent ?? "", forType: .string)
-        } else {
-            writeOriginalFormat(item, to: pasteboard)
+            schedulePaste()
+            return
         }
 
-        // Small delay to let the panel hide and focus return to the previous app
+        // Image path is async — load image, write to pasteboard, then paste
+        if item.contentType == .image, let imagePath = item.imagePath {
+            Task {
+                if let image = await ImageStorage.shared.loadImage(filename: imagePath),
+                   let tiffData = image.tiffRepresentation {
+                    pasteboard.setData(tiffData, forType: .tiff)
+                }
+                Self.simulatePaste()
+            }
+            return
+        }
+
+        // All other types are synchronous
+        writeOriginalFormat(item, to: pasteboard)
+        schedulePaste()
+    }
+
+    private func schedulePaste() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             Self.simulatePaste()
         }
@@ -50,14 +67,7 @@ final class ClipboardPaster {
             }
 
         case .image:
-            if let imagePath = item.imagePath {
-                Task {
-                    if let image = await ImageStorage.shared.loadImage(filename: imagePath),
-                       let tiffData = image.tiffRepresentation {
-                        pasteboard.setData(tiffData, forType: .tiff)
-                    }
-                }
-            }
+            break // Handled separately in paste() to avoid race condition
 
         case .file:
             let paths = item.filePathsArray
@@ -66,8 +76,11 @@ final class ClipboardPaster {
         }
     }
 
-    /// Simulate Cmd+V keypress via CGEvent
+    /// Simulate Cmd+V keypress via CGEvent targeted to the frontmost app
     private static func simulatePaste() {
+        guard let frontApp = NSWorkspace.shared.frontmostApplication else { return }
+        let pid = frontApp.processIdentifier
+
         let source = CGEventSource(stateID: CGEventSourceStateID.hidSystemState)
 
         // V key = virtual keycode 0x09
@@ -78,7 +91,7 @@ final class ClipboardPaster {
         keyDown.flags = CGEventFlags.maskCommand
         keyUp.flags = CGEventFlags.maskCommand
 
-        keyDown.post(tap: CGEventTapLocation.cghidEventTap)
-        keyUp.post(tap: CGEventTapLocation.cghidEventTap)
+        keyDown.postToPid(pid)
+        keyUp.postToPid(pid)
     }
 }

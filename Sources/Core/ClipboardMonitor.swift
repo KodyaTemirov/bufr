@@ -1,11 +1,16 @@
 import AppKit
 import Foundation
+import OSLog
+
+private let logger = Logger(subsystem: "com.bufr.app", category: "ClipboardMonitor")
 
 @MainActor @Observable
 final class ClipboardMonitor {
     private(set) var isMonitoring = false
     private var lastChangeCount: Int = 0
     private var timer: Timer?
+
+    private static let maxImageSize = 50 * 1024 * 1024 // 50 MB
 
     private let clipItemStore: ClipItemStore
     private let exclusionManager: ExclusionManager
@@ -81,13 +86,31 @@ final class ClipboardMonitor {
             filePaths: filePaths
         )
 
-        // Save image to disk if needed
-        var imagePath: String?
-        if contentType == .image, let imageData {
-            let itemId = UUID()
-            imagePath = try? awaitImageSave(data: imageData, id: itemId)
+        // Save image to disk if needed (skip oversized images)
+        if contentType == .image, let imageData, imageData.count <= Self.maxImageSize {
+            Task {
+                let itemId = UUID()
+                let imagePath = try? await ImageStorage.shared.saveImage(imageData, id: itemId)
+                self.saveClipItem(
+                    contentType: contentType, textContent: textContent,
+                    richContent: richContent, imagePath: imagePath,
+                    filePaths: filePaths, appBundleId: appBundleId, hash: hash
+                )
+            }
+        } else {
+            saveClipItem(
+                contentType: contentType, textContent: textContent,
+                richContent: richContent, imagePath: nil,
+                filePaths: filePaths, appBundleId: appBundleId, hash: hash
+            )
         }
+    }
 
+    private func saveClipItem(
+        contentType: ContentType, textContent: String?,
+        richContent: Data?, imagePath: String?,
+        filePaths: [String]?, appBundleId: String?, hash: String
+    ) {
         let item = ClipItem(
             contentType: contentType,
             textContent: textContent,
@@ -106,27 +129,7 @@ final class ClipboardMonitor {
                 SoundManager.playCopySound()
             }
         } catch {
-            print("Failed to save clip item: \(error)")
+            logger.error("Failed to save clip item: \(error.localizedDescription, privacy: .public)")
         }
-    }
-
-    private nonisolated func awaitImageSave(data: Data, id: UUID) throws -> String {
-        // Use a synchronous wrapper since ImageStorage is an actor
-        nonisolated(unsafe) var result: String?
-        nonisolated(unsafe) var saveError: Error?
-
-        let semaphore = DispatchSemaphore(value: 0)
-        Task { @Sendable in
-            do {
-                result = try await ImageStorage.shared.saveImage(data, id: id)
-            } catch {
-                saveError = error
-            }
-            semaphore.signal()
-        }
-        semaphore.wait()
-
-        if let saveError { throw saveError }
-        return result ?? "\(id.uuidString).png"
     }
 }

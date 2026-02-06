@@ -6,29 +6,41 @@ final class AppDatabase: Sendable {
 
     /// Production initializer — creates DB file in Application Support
     static let shared: AppDatabase = {
-        let folderURL = FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Bufr", isDirectory: true)
+        do {
+            let folderURL = FileManager.default
+                .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("Bufr", isDirectory: true)
 
-        try! FileManager.default.createDirectory(
-            at: folderURL,
-            withIntermediateDirectories: true
-        )
+            try FileManager.default.createDirectory(
+                at: folderURL,
+                withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700]
+            )
 
-        let dbURL = folderURL.appendingPathComponent("bufr.sqlite")
-        let dbQueue = try! DatabaseQueue(path: dbURL.path)
-        return AppDatabase(dbQueue: dbQueue)
+            let dbURL = folderURL.appendingPathComponent("bufr.sqlite")
+            let dbQueue = try DatabaseQueue(path: dbURL.path)
+
+            // Restrict DB file to owner-only access
+            try? FileManager.default.setAttributes(
+                [.posixPermissions: 0o600],
+                ofItemAtPath: dbURL.path
+            )
+
+            return try AppDatabase(dbQueue: dbQueue)
+        } catch {
+            fatalError("Bufr: Failed to initialize database — \(error.localizedDescription)")
+        }
     }()
 
     /// Testable initializer — accepts any DatabaseQueue (including in-memory)
-    init(dbQueue: DatabaseQueue) {
+    init(dbQueue: DatabaseQueue) throws {
         self.dbQueue = dbQueue
-        try! Self.migrator.migrate(dbQueue)
+        try Self.migrator.migrate(dbQueue)
     }
 
     /// Creates an in-memory database for testing
     static func makeEmpty() throws -> AppDatabase {
-        AppDatabase(dbQueue: try DatabaseQueue())
+        try AppDatabase(dbQueue: DatabaseQueue())
     }
 
     // MARK: - Migrations

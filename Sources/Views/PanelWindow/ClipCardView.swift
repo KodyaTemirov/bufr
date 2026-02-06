@@ -1,5 +1,8 @@
 import AppKit
+import OSLog
 import SwiftUI
+
+private let logger = Logger(subsystem: "com.bufr.app", category: "ClipCardView")
 
 struct ClipCardView: View {
     @Environment(AppState.self) private var appState
@@ -68,7 +71,7 @@ struct ClipCardView: View {
                             do {
                                 try appState.pinboardStore.addClip(item.id, to: board.id)
                             } catch {
-                                print("[Bufr] Failed to add clip to board: \(error)")
+                                logger.error("Failed to add clip to board: \(error.localizedDescription, privacy: .public)")
                             }
                         } label: {
                             Label(board.name, systemImage: "circle.fill")
