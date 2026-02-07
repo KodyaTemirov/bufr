@@ -84,17 +84,20 @@ struct UpdateAlertView: View {
     }
 
     private func markdownBody(_ body: String) -> AttributedString {
-        // Убираем SHA256 строку и горизонтальную линию из отображения
         let cleaned = body
             .components(separatedBy: "\n")
             .filter { line in
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
-                return !trimmed.hasPrefix("SHA256:") && trimmed != "---"
+                return !trimmed.hasPrefix("SHA256:") && !trimmed.hasPrefix("`") && trimmed != "---"
             }
             .joined(separator: "\n")
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
-        if let attributed = try? AttributedString(markdown: cleaned) {
+        // interpretedSyntax preserves line breaks properly
+        if let attributed = try? AttributedString(
+            markdown: cleaned,
+            options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        ) {
             return attributed
         }
         return AttributedString(cleaned)

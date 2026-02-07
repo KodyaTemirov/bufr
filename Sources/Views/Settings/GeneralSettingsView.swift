@@ -19,13 +19,12 @@ struct GeneralSettingsView: View {
         Form {
             // MARK: - Сохранять историю
             Section {
-                RetentionSlider(
-                    selectedIndex: Binding(
-                        get: { retentionSteps.firstIndex(of: appState.retentionPeriod) ?? 2 },
-                        set: { appState.retentionPeriod = retentionSteps[$0] }
-                    ),
-                    labels: retentionLabels
-                )
+                Picker("Период", selection: $state.retentionPeriod) {
+                    ForEach(Array(zip(retentionSteps, retentionLabels)), id: \.0) { step, label in
+                        Text(label).tag(step)
+                    }
+                }
+                .pickerStyle(.segmented)
 
                 Button("Стереть историю...") {
                     confirmClearHistory = true
