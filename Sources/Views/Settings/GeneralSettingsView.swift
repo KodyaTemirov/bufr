@@ -28,11 +28,13 @@ struct GeneralSettingsView: View {
                         in: 0...Double(retentionSteps.count - 1),
                         step: 1
                     )
+                    .tint(.clear)
 
                     HStack {
                         ForEach(retentionLabels.indices, id: \.self) { i in
                             Text(retentionLabels[i])
                                 .font(.caption2)
+                                .fontWeight(retentionSteps[i] == appState.retentionPeriod ? .semibold : .regular)
                                 .foregroundStyle(
                                     retentionSteps[i] == appState.retentionPeriod ? .primary : .secondary
                                 )

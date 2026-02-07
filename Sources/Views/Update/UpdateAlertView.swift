@@ -30,7 +30,7 @@ struct UpdateAlertView: View {
             if let release = appState.updater.latestRelease, !release.body.isEmpty {
                 GroupBox("Что нового") {
                     ScrollView {
-                        Text(release.body)
+                        Text(markdownBody(release.body))
                             .font(.callout)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -81,6 +81,23 @@ struct UpdateAlertView: View {
         }
         .padding(24)
         .frame(width: 420, height: 350)
+    }
+
+    private func markdownBody(_ body: String) -> AttributedString {
+        // Убираем SHA256 строку и горизонтальную линию из отображения
+        let cleaned = body
+            .components(separatedBy: "\n")
+            .filter { line in
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                return !trimmed.hasPrefix("SHA256:") && trimmed != "---"
+            }
+            .joined(separator: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let attributed = try? AttributedString(markdown: cleaned) {
+            return attributed
+        }
+        return AttributedString(cleaned)
     }
 
     @ViewBuilder
