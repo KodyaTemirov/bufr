@@ -29,6 +29,7 @@ struct AboutSettingsView: View {
                     Spacer()
                 }
 
+                Link("Сайт", destination: URL(string: "https://bufr.uz/")!)
                 Link("GitHub", destination: URL(string: "https://github.com/KodyaTemirov/bufr")!)
                 Link("Поддержать разработчика", destination: URL(string: "https://tirikchilik.uz/kodyatemirov")!)
             } header: {

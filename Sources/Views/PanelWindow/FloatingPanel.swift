@@ -45,28 +45,35 @@ final class FloatingPanel: NSPanel {
         onClickOutside?()
     }
 
-    // Forward vertical scroll wheel events to the horizontal NSScrollView
-    override func sendEvent(_ event: NSEvent) {
-        if event.type == .scrollWheel,
-           abs(event.scrollingDeltaY) > abs(event.scrollingDeltaX),
-           let scrollView = findHorizontalScrollView(in: contentView) {
-            scrollView.scrollWheel(with: event)
+    // Convert vertical scroll to horizontal so the card strip scrolls with
+    // mouse wheel / trackpad vertical swipe.
+    override func scrollWheel(with event: NSEvent) {
+        // Only remap when vertical component dominates
+        guard abs(event.scrollingDeltaY) > abs(event.scrollingDeltaX) else {
+            super.scrollWheel(with: event)
             return
         }
-        super.sendEvent(event)
-    }
 
-    private func findHorizontalScrollView(in view: NSView?) -> NSScrollView? {
-        guard let view else { return nil }
-        for subview in view.subviews {
-            if let sv = subview as? NSScrollView, sv.hasHorizontalScroller {
-                return sv
-            }
-            if let found = findHorizontalScrollView(in: subview) {
-                return found
+        // Build a copy with axes swapped
+        if let cg = event.cgEvent?.copy() {
+            let dy1 = cg.getDoubleValueField(.scrollWheelEventDeltaAxis1)
+            let dy2 = cg.getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
+            let dy3 = cg.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1)
+
+            cg.setDoubleValueField(.scrollWheelEventDeltaAxis1, value: 0)
+            cg.setDoubleValueField(.scrollWheelEventDeltaAxis2, value: -dy1)
+            cg.setDoubleValueField(.scrollWheelEventPointDeltaAxis1, value: 0)
+            cg.setDoubleValueField(.scrollWheelEventPointDeltaAxis2, value: -dy2)
+            cg.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1, value: 0)
+            cg.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2, value: -dy3)
+
+            if let remapped = NSEvent(cgEvent: cg) {
+                super.scrollWheel(with: remapped)
+                return
             }
         }
-        return nil
+
+        super.scrollWheel(with: event)
     }
 
     override func orderFrontRegardless() {
