@@ -26,24 +26,9 @@ final class AppState {
     var selectedContentFilter: ContentType?
 
     // MARK: - Settings (persisted via UserDefaults)
-    var historyLimit: Int {
+    var retentionPeriod: Int {  // дни: 1, 7, 30, 365, 0 (бесконечно)
         didSet {
-            let clamped = max(100, min(50_000, historyLimit))
-            if historyLimit != clamped {
-                historyLimit = clamped
-                return
-            }
-            UserDefaults.standard.set(historyLimit, forKey: "historyLimit")
-        }
-    }
-    var autoCleanupDays: Int {
-        didSet {
-            let clamped = max(1, min(365, autoCleanupDays))
-            if autoCleanupDays != clamped {
-                autoCleanupDays = clamped
-                return
-            }
-            UserDefaults.standard.set(autoCleanupDays, forKey: "autoCleanupDays")
+            UserDefaults.standard.set(retentionPeriod, forKey: "retentionPeriod")
         }
     }
     var playCopySound: Bool {
@@ -75,8 +60,15 @@ final class AppState {
 
         // Load settings from UserDefaults
         let defaults = UserDefaults.standard
-        self.historyLimit = max(100, min(50_000, defaults.object(forKey: "historyLimit") as? Int ?? 5000))
-        self.autoCleanupDays = max(1, min(365, defaults.object(forKey: "autoCleanupDays") as? Int ?? 30))
+        // Миграция: если retentionPeriod ещё не задан, берём старый autoCleanupDays
+        if defaults.object(forKey: "retentionPeriod") == nil,
+           let oldDays = defaults.object(forKey: "autoCleanupDays") as? Int {
+            let steps = [1, 7, 30, 365, 0]
+            let closest = steps.min(by: { abs($0 - oldDays) < abs($1 - oldDays) }) ?? 30
+            self.retentionPeriod = closest
+        } else {
+            self.retentionPeriod = defaults.object(forKey: "retentionPeriod") as? Int ?? 30
+        }
         self.playCopySound = defaults.bool(forKey: "playCopySound")
         self.panelPosition = PanelPosition(rawValue: defaults.string(forKey: "panelPosition") ?? "") ?? .bottom
         self.launchAtLogin = defaults.bool(forKey: "launchAtLogin")
@@ -100,8 +92,9 @@ final class AppState {
             try exclusionManager.loadExcludedApps()
             try clipItemStore.fetchItems()
             try pinboardStore.fetchPinboards()
-            try clipItemStore.deleteOlderThan(days: autoCleanupDays)
-            try clipItemStore.enforceHistoryLimit(historyLimit)
+            if retentionPeriod > 0 {
+                try clipItemStore.deleteOlderThan(days: retentionPeriod)
+            }
         } catch {
             logger.error("Failed to initialize: \(error.localizedDescription, privacy: .public)")
         }
