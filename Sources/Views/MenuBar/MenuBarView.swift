@@ -34,10 +34,29 @@ struct MenuBarView: View {
 
             Divider()
 
+            Button("Проверить обновления...") {
+                Task {
+                    await AppState.shared.updater.checkForUpdates()
+                }
+                NSApplication.shared.activate()
+                openSettings()
+            }
+
+            Divider()
+
             Button("Настройки...") {
+                NSApplication.shared.activate()
                 openSettings()
             }
             .keyboardShortcut(",", modifiers: .command)
+
+            Divider()
+
+            Button("Поддержать") {
+                if let url = URL(string: "https://tirikchilik.uz/kodyatemirov") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
 
             Divider()
 

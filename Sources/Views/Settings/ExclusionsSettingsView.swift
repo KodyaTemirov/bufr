@@ -7,16 +7,21 @@ struct ExclusionsSettingsView: View {
 
     var body: some View {
         Form {
-            Section("Исключённые приложения") {
+            Section {
                 Text("Bufr не будет сохранять данные из буфера обмена этих приложений.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
                 if appState.exclusionManager.excludedApps.isEmpty {
-                    Text("Нет исключений")
-                        .foregroundStyle(.tertiary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 20)
+                    VStack(spacing: 8) {
+                        Image(systemName: "app.dashed")
+                            .font(.system(size: 24))
+                            .foregroundStyle(.tertiary)
+                        Text("Нет исключений")
+                            .foregroundStyle(.tertiary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 20)
                 } else {
                     List(appState.exclusionManager.excludedApps, selection: $selection) { app in
                         ExcludedAppRow(app: app)
@@ -39,6 +44,8 @@ struct ExclusionsSettingsView: View {
                         }
                     }
                 }
+            } header: {
+                Label("Исключённые приложения", systemImage: "eye.slash")
             }
         }
         .formStyle(.grouped)

@@ -244,6 +244,7 @@ struct ClipPanelView: View {
             // Settings
             Button {
                 appState.hidePanel()
+                NSApplication.shared.activate()
                 openSettings()
             } label: {
                 Image(systemName: "gearshape")

@@ -6,7 +6,7 @@ struct HotKeySettingsView: View {
 
     var body: some View {
         Form {
-            Section("Глобальная горячая клавиша") {
+            Section {
                 HStack {
                     Text("Открыть панель")
 
@@ -18,18 +18,17 @@ struct HotKeySettingsView: View {
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
                             .background(Color.accentColor.opacity(0.1))
-                            .clipShape(.rect(cornerRadius: 6))
+                            .clipShape(.rect(cornerRadius: 8))
                             .overlay(
-                                RoundedRectangle(cornerRadius: 6)
+                                RoundedRectangle(cornerRadius: 8)
                                     .stroke(Color.accentColor, lineWidth: 1)
                             )
                     } else {
                         Text(appState.hotKeyDisplayString)
-                            .font(.system(.body, design: .monospaced))
+                            .font(.system(.title3, design: .monospaced, weight: .medium))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(Color.primary.opacity(0.05))
-                            .clipShape(.rect(cornerRadius: 6))
+                            .background(.quinary, in: .rect(cornerRadius: 8))
                     }
                 }
 
@@ -44,12 +43,16 @@ struct HotKeySettingsView: View {
                         }
                     }
                 }
+            } header: {
+                Label("Глобальная горячая клавиша", systemImage: "command")
             }
 
             Section {
                 Text("Горячая клавиша работает глобально — панель откроется из любого приложения.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            } header: {
+                Label("Подсказка", systemImage: "lightbulb")
             }
         }
         .formStyle(.grouped)

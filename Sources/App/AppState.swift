@@ -18,6 +18,7 @@ final class AppState {
     let panelManager: PanelManager
     let clipboardPaster: ClipboardPaster
     let pinboardStore: PinboardStore
+    var updater: AppUpdater
 
     // MARK: - UI State
     var isPanelVisible = false
@@ -27,13 +28,21 @@ final class AppState {
     // MARK: - Settings (persisted via UserDefaults)
     var historyLimit: Int {
         didSet {
-            historyLimit = max(100, min(50_000, historyLimit))
+            let clamped = max(100, min(50_000, historyLimit))
+            if historyLimit != clamped {
+                historyLimit = clamped
+                return
+            }
             UserDefaults.standard.set(historyLimit, forKey: "historyLimit")
         }
     }
     var autoCleanupDays: Int {
         didSet {
-            autoCleanupDays = max(1, min(365, autoCleanupDays))
+            let clamped = max(1, min(365, autoCleanupDays))
+            if autoCleanupDays != clamped {
+                autoCleanupDays = clamped
+                return
+            }
             UserDefaults.standard.set(autoCleanupDays, forKey: "autoCleanupDays")
         }
     }
@@ -84,6 +93,7 @@ final class AppState {
         self.panelManager = PanelManager()
         self.clipboardPaster = ClipboardPaster()
         self.pinboardStore = PinboardStore(database: database)
+        self.updater = AppUpdater()
 
         // Load initial data
         do {
@@ -111,6 +121,11 @@ final class AppState {
         // Panel close callback
         panelManager.onPanelClose = { [weak self] in
             self?.isPanelVisible = false
+        }
+
+        // Check for updates on launch
+        Task {
+            await updater.checkOnLaunchIfNeeded()
         }
     }
 

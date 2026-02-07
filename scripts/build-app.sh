@@ -55,3 +55,19 @@ xattr -cr "$APP_BUNDLE" 2>/dev/null || true
 echo ""
 echo "Done! $APP_BUNDLE is ready."
 echo "Run: open $APP_BUNDLE"
+
+# Create distributable ZIP with SHA-256 hash
+echo ""
+echo "Creating ZIP archive..."
+ZIP_NAME="${APP_NAME}.app.zip"
+cd "$PROJECT_DIR"
+rm -f "$ZIP_NAME"
+zip -r -y "$ZIP_NAME" "$APP_NAME.app"
+
+SHA256=$(shasum -a 256 "$ZIP_NAME" | cut -d' ' -f1)
+echo ""
+echo "ZIP: $ZIP_NAME"
+echo "SHA256: $SHA256"
+echo ""
+echo "Include in GitHub release notes:"
+echo "SHA256: $SHA256"

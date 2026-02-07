@@ -22,7 +22,19 @@ struct SettingsView: View {
                 .tabItem {
                     Label("Исключения", systemImage: "eye.slash")
                 }
+
+            UpdateSettingsView()
+                .environment(appState)
+                .tabItem {
+                    Label("Обновления", systemImage: "arrow.triangle.2.circlepath")
+                }
+
+            AboutSettingsView()
+                .environment(appState)
+                .tabItem {
+                    Label("О приложении", systemImage: "info.circle")
+                }
         }
-        .frame(width: 480, height: 380)
+        .frame(width: 520, height: 520)
     }
 }

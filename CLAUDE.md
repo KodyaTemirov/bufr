@@ -57,3 +57,33 @@ Utilities/    → Content type detection, syntax highlighting, color extraction,
 ### Data Model
 
 SQLite tables: `clip_items` (with FTS5 virtual table for search), `pinboards`, `pinboard_items` (junction), `excluded_apps`. Schema defined in `doc.md` section 4.
+
+### Auto-Update System
+
+Custom updater based on GitHub Releases API (no Sparkle). Located in `Core/AppUpdater.swift`.
+
+- **Repository:** `KodyaTemirov/bufr` — checks `GET /repos/{owner}/{repo}/releases/latest`
+- **Version parsing:** `Models/AppVersion.swift` — semantic versioning (parses `1.2.3` and `v1.2.3` tags)
+- **Verification:** SHA-256 hash from GitHub release body (format: `SHA256: <hex>`), verified via CryptoKit
+- **Install flow:** download ZIP → verify hash → extract with `/usr/bin/ditto` → backup current .app → replace → `xattr -cr` → relaunch via `/bin/sh`
+- **Auto-check:** on launch if enabled, throttled to once per hour, 3s delay
+- **Settings:** `autoCheckEnabled`, `lastUpdateCheckDate` persisted in UserDefaults
+- **UI:** section in GeneralSettingsView, menu item in MenuBarView, modal UpdateAlertView sheet
+- **Build script** (`scripts/build-app.sh`): creates ZIP and outputs SHA-256 hash for GitHub release notes
+
+## Creating a Release
+
+1. Update version in `SupportFiles/Info.plist` — change `CFBundleShortVersionString` (e.g. `1.1.0`) and `CFBundleVersion`
+2. Build the app:
+   ```bash
+   ./scripts/build-app.sh release
+   ```
+3. The script outputs the SHA-256 hash at the end — copy it
+4. Create a GitHub release on `KodyaTemirov/bufr`:
+   - Tag: `v1.1.0` (must match the version from Info.plist, prefixed with `v`)
+   - Attach `Bufr.app.zip` as a release asset
+   - Include the hash in the release body on a separate line:
+     ```
+     SHA256: <hash from build script>
+     ```
+   - The updater parses this line to verify downloads. If omitted, verification is skipped
