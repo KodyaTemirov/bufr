@@ -28,6 +28,7 @@ struct GeneralSettingsView: View {
                         in: 0...Double(retentionSteps.count - 1),
                         step: 1
                     )
+                    .frame(maxWidth: .infinity)
 
                     HStack {
                         ForEach(retentionLabels.indices, id: \.self) { i in
