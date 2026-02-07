@@ -19,28 +19,27 @@ struct GeneralSettingsView: View {
         Form {
             // MARK: - Сохранять историю
             Section {
-                LabeledContent {} label: {
-                    VStack(spacing: 8) {
-                        Slider(
-                            value: Binding(
-                                get: { Double(retentionSteps.firstIndex(of: state.retentionPeriod) ?? 2) },
-                                set: { state.retentionPeriod = retentionSteps[Int($0)] }
-                            ),
-                            in: 0...Double(retentionSteps.count - 1),
-                            step: 1
-                        )
+                VStack(spacing: 8) {
+                    Slider(
+                        value: Binding(
+                            get: { Double(retentionSteps.firstIndex(of: state.retentionPeriod) ?? 2) },
+                            set: { state.retentionPeriod = retentionSteps[Int($0)] }
+                        ),
+                        in: 0...Double(retentionSteps.count - 1),
+                        step: 1
+                    )
 
-                        HStack {
-                            ForEach(retentionLabels.indices, id: \.self) { i in
-                                Text(retentionLabels[i])
-                                    .font(.caption2)
-                                    .fontWeight(retentionSteps[i] == appState.retentionPeriod ? .semibold : .regular)
-                                    .foregroundStyle(retentionSteps[i] == appState.retentionPeriod ? .primary : .secondary)
-                                if i < retentionLabels.count - 1 { Spacer() }
-                            }
+                    HStack {
+                        ForEach(retentionLabels.indices, id: \.self) { i in
+                            Text(retentionLabels[i])
+                                .font(.caption2)
+                                .fontWeight(retentionSteps[i] == appState.retentionPeriod ? .semibold : .regular)
+                                .foregroundStyle(retentionSteps[i] == appState.retentionPeriod ? .primary : .secondary)
+                            if i < retentionLabels.count - 1 { Spacer() }
                         }
                     }
                 }
+                .gridCellColumns(2)
 
                 Button("Стереть историю...") {
                     confirmClearHistory = true
