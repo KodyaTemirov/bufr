@@ -4,6 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "Bufr",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v26)
     ],

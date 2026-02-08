@@ -1,8 +1,9 @@
 import AppKit
 
 enum SoundManager {
+    @MainActor
     static func playCopySound() {
-        NSSound(named: "Tink")?.play()
+        AppState.shared.copySound.play()
     }
 
     static func playPasteSound() {

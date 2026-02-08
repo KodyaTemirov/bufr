@@ -8,12 +8,12 @@ struct HotKeySettingsView: View {
         Form {
             Section {
                 HStack {
-                    Text("Открыть панель")
+                    Text(L10n("hotkeys.openPanel"))
 
                     Spacer()
 
                     if isRecording {
-                        Text("Нажмите комбинацию клавиш...")
+                        Text(L10n("hotkeys.prompt"))
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
@@ -33,26 +33,26 @@ struct HotKeySettingsView: View {
                 }
 
                 HStack {
-                    Button(isRecording ? "Отмена" : "Записать новый хоткей") {
+                    Button(isRecording ? L10n("common.cancel") : L10n("hotkeys.record")) {
                         isRecording.toggle()
                     }
 
                     if !isRecording {
-                        Button("Сбросить") {
+                        Button(L10n("hotkeys.reset")) {
                             appState.resetHotKey()
                         }
                     }
                 }
             } header: {
-                Label("Глобальная горячая клавиша", systemImage: "command")
+                Label(L10n("hotkeys.header"), systemImage: "command")
             }
 
             Section {
-                Text("Горячая клавиша работает глобально — панель откроется из любого приложения.")
+                Text(L10n("hotkeys.tip.text"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } header: {
-                Label("Подсказка", systemImage: "lightbulb")
+                Label(L10n("hotkeys.tip.header"), systemImage: "lightbulb")
             }
         }
         .formStyle(.grouped)

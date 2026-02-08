@@ -26,15 +26,15 @@ struct EditPinboardSheet: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Редактировать доску")
+            Text(L10n("pinboard.edit.title"))
                 .font(.headline)
 
-            TextField("Название", text: $name)
+            TextField(L10n("pinboard.name"), text: $name)
                 .textFieldStyle(.roundedBorder)
 
             // Color picker
             VStack(alignment: .leading, spacing: 6) {
-                Text("Цвет")
+                Text(L10n("pinboard.color"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -69,13 +69,13 @@ struct EditPinboardSheet: View {
             }
 
             HStack {
-                Button("Отмена") {
+                Button(L10n("common.cancel")) {
                     dismiss()
                 }
 
                 Spacer()
 
-                Button("Сохранить") {
+                Button(L10n("common.save")) {
                     guard !name.isEmpty else { return }
                     onSave(name, selectedColor)
                     dismiss()

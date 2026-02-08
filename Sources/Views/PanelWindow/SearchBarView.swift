@@ -10,7 +10,7 @@ struct SearchBarView: View {
                 .font(.system(.body, weight: .medium))
                 .foregroundStyle(.tertiary)
 
-            TextField("Поиск...", text: $query)
+            TextField(L10n("search.placeholder"), text: $query)
                 .textFieldStyle(.plain)
                 .font(.system(.body, design: .rounded))
                 .focused($isFocused)

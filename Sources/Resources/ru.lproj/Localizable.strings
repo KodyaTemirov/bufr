@@ -1,0 +1,222 @@
+/* Settings Tabs */
+"settings.tab.general" = "Основные";
+"settings.tab.hotkeys" = "Горячие клавиши";
+"settings.tab.exclusions" = "Исключения";
+"settings.tab.updates" = "Обновления";
+"settings.tab.about" = "О приложении";
+
+/* General Settings - Retention */
+"general.retention.header" = "Сохранять историю";
+"general.retention.day" = "День";
+"general.retention.week" = "Неделя";
+"general.retention.month" = "Месяц";
+"general.retention.year" = "Год";
+"general.retention.forever" = "Бесконечно";
+"general.retention.clear" = "Стереть историю...";
+"general.retention.confirm.title" = "Стереть историю?";
+"general.retention.confirm.action" = "Стереть";
+"general.retention.confirm.message" = "Вся история копирования будет удалена.";
+
+/* General Settings - Language */
+"general.language.header" = "Язык";
+"general.language.picker" = "Язык интерфейса";
+
+/* General Settings - Paste */
+"general.paste.header" = "Вставка";
+"general.paste.activeApp" = "В активное приложение";
+"general.paste.activeApp.desc" = "Вставлять выбранные элементы непосредственно в приложение, которое используется в данный момент.";
+"general.paste.clipboard" = "В буфер обмена";
+"general.paste.clipboard.desc" = "Копировать выбранные элементы в системный буфер обмена, чтобы позже вставить их вручную.";
+"general.paste.plainText" = "Всегда вставлять без форматирования";
+
+/* General Settings - Panel */
+"general.panel.header" = "Панель";
+"general.panel.position" = "Позиция панели";
+"general.panel.bottom" = "Снизу";
+"general.panel.top" = "Сверху";
+
+/* General Settings - System */
+"general.system.header" = "Система";
+"general.system.launchAtLogin" = "Запуск при старте системы";
+"general.system.playCopySound" = "Звук при копировании";
+"general.system.copySound" = "Звук";
+
+/* General Settings - Boards */
+"general.boards.header" = "Доски";
+"general.boards.exportAll" = "Экспортировать все доски";
+"general.boards.import" = "Импортировать доски...";
+"general.boards.deleteAll" = "Удалить все доски";
+"general.boards.confirm.title" = "Удалить все доски?";
+"general.boards.confirm.action" = "Удалить";
+"general.boards.confirm.message" = "Все доски и привязки к ним будут удалены.";
+
+/* Common */
+"common.error" = "Ошибка";
+"common.done" = "Готово";
+"common.ok" = "OK";
+"common.cancel" = "Отмена";
+"common.save" = "Сохранить";
+"common.delete" = "Удалить";
+"common.close" = "Закрыть";
+"common.export.success" = "Экспортировано в %@";
+"common.import.success" = "Импортировано досок: %d — %@";
+
+/* About */
+"about.header" = "О приложении";
+"about.version" = "Версия %@";
+"about.website" = "Сайт";
+"about.github" = "GitHub";
+"about.support" = "Поддержать разработчика";
+"about.deleteData.header" = "Удаление данных";
+"about.deleteAll" = "Удалить всё";
+"about.deleteAll.confirm.title" = "Удалить всё?";
+"about.deleteAll.confirm.action" = "Удалить всё";
+"about.deleteAll.confirm.message" = "Вся история и все доски будут удалены.";
+
+/* Updates */
+"updates.header" = "Обновления";
+"updates.autoCheck" = "Проверять автоматически";
+"updates.checkNow" = "Проверить обновления";
+"updates.checking" = "Проверка...";
+"updates.upToDate" = "Установлена последняя версия";
+"updates.available" = "Версия %@ доступна";
+"updates.lastCheck" = "Последняя проверка:";
+"updates.lastCheck.suffix" = "назад";
+
+/* Exclusions */
+"exclusions.header" = "Исключённые приложения";
+"exclusions.description" = "Bufr не будет сохранять данные из буфера обмена этих приложений.";
+"exclusions.empty" = "Нет исключений";
+"exclusions.add" = "Добавить";
+"exclusions.remove" = "Удалить";
+
+/* Hotkeys */
+"hotkeys.header" = "Глобальная горячая клавиша";
+"hotkeys.openPanel" = "Открыть панель";
+"hotkeys.prompt" = "Нажмите комбинацию клавиш...";
+"hotkeys.record" = "Записать новый хоткей";
+"hotkeys.reset" = "Сбросить";
+"hotkeys.tip.header" = "Подсказка";
+"hotkeys.tip.text" = "Горячая клавиша работает глобально — панель откроется из любого приложения.";
+
+/* Panel */
+"panel.clipboard" = "Буфер обмена";
+"panel.edit" = "Редактировать";
+"panel.exportBoard" = "Экспортировать доску...";
+"panel.rename" = "Переименовать";
+"panel.name" = "Название";
+"panel.resetName" = "Сбросить";
+"panel.confirmDeleteBoard" = "Удалить доску «%@»?";
+
+"panel.hint.navigation" = "навигация";
+"panel.hint.paste" = "вставить";
+"panel.hint.plainText" = "plain text";
+"panel.hint.quickPaste" = "быстрая вставка";
+"panel.hint.preview" = "превью";
+"panel.hint.close" = "закрыть";
+
+"panel.empty.board" = "Доска пуста";
+"panel.empty.board.hint" = "Добавьте элементы через контекстное меню";
+"panel.empty.history" = "История пуста";
+"panel.empty.history.hint" = "Скопируйте что-нибудь для начала";
+"panel.empty.noResults" = "Ничего не найдено";
+"panel.empty.noResults.hint" = "Попробуйте изменить запрос";
+
+/* Card */
+"card.addToBoard" = "Добавить на доску";
+"card.copy" = "Копировать";
+"card.rename" = "Переименовать";
+"card.characters" = "%d символов";
+"card.files" = "%d файлов";
+"card.file.one" = "1 файл";
+"card.time.now" = "только что";
+"card.time.minutes" = "%d мин назад";
+"card.time.hours" = "%d ч назад";
+"card.time.days" = "%d д назад";
+
+/* Search */
+"search.placeholder" = "Поиск...";
+
+/* Preview */
+"preview.edit" = "Редактировать";
+"preview.save" = "Сохранить";
+"preview.from" = "из %@";
+
+/* Pinboard */
+"pinboard.create.title" = "Новая доска";
+"pinboard.edit.title" = "Редактировать доску";
+"pinboard.name" = "Название";
+"pinboard.color" = "Цвет";
+"pinboard.create" = "Создать";
+
+/* App Picker */
+"appPicker.title" = "Выберите приложение";
+
+/* Menu Bar */
+"menubar.openPanel" = "Открыть панель  ⌘⇧V";
+"menubar.historyEmpty" = "История пуста";
+"menubar.clearHistory" = "Очистить историю...";
+"menubar.checkUpdates" = "Проверить обновления...";
+"menubar.settings" = "Настройки...";
+"menubar.support" = "Поддержать";
+"menubar.quit" = "Выход";
+"menubar.image" = "Изображение";
+"menubar.file" = "Файл";
+
+/* Update Alert */
+"updateAlert.title" = "Доступно обновление";
+"updateAlert.newVersion" = "Новая версия: %@";
+"updateAlert.currentVersion" = "Текущая версия: %@";
+"updateAlert.whatsNew" = "Что нового";
+"updateAlert.downloading" = "Загрузка... %d%%";
+"updateAlert.installing" = "Установка...";
+"updateAlert.later" = "Позже";
+"updateAlert.download" = "Загрузить и установить";
+"updateAlert.installRestart" = "Установить и перезапустить";
+"updateAlert.retry" = "Повторить";
+
+/* Onboarding */
+"onboarding.page1.title" = "Добро пожаловать в Bufr";
+"onboarding.page1.subtitle" = "Бесплатный менеджер буфера обмена для macOS";
+"onboarding.page1.description" = "Bufr автоматически сохраняет всё, что вы копируете — текст, изображения, файлы, ссылки и цвета.";
+"onboarding.page2.title" = "Быстрый доступ";
+"onboarding.page2.subtitle" = "⌘⇧V — ваш горячий клавиш";
+"onboarding.page2.description" = "Нажмите ⌘⇧V в любом приложении, чтобы открыть панель Bufr. Используйте стрелки для навигации и Enter для вставки.";
+"onboarding.page3.title" = "Мгновенный поиск";
+"onboarding.page3.subtitle" = "Находите нужное за секунды";
+"onboarding.page3.description" = "Начните вводить текст для поиска по истории. Используйте фильтры для сортировки по типу контента.";
+"onboarding.page4.title" = "Доски";
+"onboarding.page4.subtitle" = "Организуйте важное";
+"onboarding.page4.description" = "Создавайте тематические доски и добавляйте элементы через контекстное меню (правый клик на карточке).";
+"onboarding.back" = "Назад";
+"onboarding.next" = "Далее";
+"onboarding.start" = "Начать работу";
+
+/* Content Types */
+"contentType.text" = "Текст";
+"contentType.richText" = "Форматированный";
+"contentType.image" = "Изображение";
+"contentType.file" = "Файл";
+"contentType.url" = "Ссылка";
+"contentType.color" = "Цвет";
+
+/* Errors - Updater */
+"error.update.checkFailed" = "Не удалось проверить обновления";
+"error.update.parseRelease" = "Не удалось разобрать данные релиза";
+"error.update.currentVersion" = "Не удалось определить текущую версию";
+"error.update.check" = "Ошибка проверки: %@";
+"error.update.hashMismatch" = "Хэш файла не совпадает";
+"error.update.download" = "Ошибка загрузки: %@";
+"error.update.install" = "Ошибка установки: %@";
+"error.update.extraction" = "Ошибка распаковки: %@";
+"error.update.noApp" = "Не найден .app в архиве";
+
+/* Errors - Export */
+"error.export.empty" = "Доска пуста, нечего экспортировать";
+"error.export.zipCreate" = "Ошибка создания архива: %@";
+"error.export.zipExtract" = "Ошибка распаковки архива: %@";
+"error.export.invalid" = "Некорректный файл .bufr";
+"error.export.version" = "Неподдерживаемая версия формата: %d";
+"error.export.decode" = "Ошибка чтения данных: %@";
+"error.export.importTitle" = "Импортировать доску";
+"error.export.importAllTitle" = "Импортировать доски";

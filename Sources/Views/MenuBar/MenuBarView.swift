@@ -1,24 +1,28 @@
 import SwiftUI
 
 struct MenuBarView: View {
+    @Environment(AppState.self) private var appState
     @Environment(\.openSettings) private var openSettings
     @State private var menuItems: [ClipItem] = []
 
     var body: some View {
+        // Reading appLanguage forces SwiftUI to re-render on language change
+        let _ = appState.appLanguage
         VStack(spacing: 0) {
-            Button("Открыть панель  ⌘⇧V") {
+            Button(L10n("menubar.openPanel")) {
                 AppState.shared.togglePanel()
             }
+            .keyboardShortcut("V", modifiers: [.command, .shift])
 
             Divider()
 
             if menuItems.isEmpty {
-                Text("История пуста")
+                Text(L10n("menubar.historyEmpty"))
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 8)
             } else {
-                ForEach(menuItems) { item in
-                    MenuBarItemRow(item: item) {
+                ForEach(Array(menuItems.enumerated()), id: \.element.id) { index, item in
+                    MenuBarItemRow(item: item, shortcutIndex: index < 9 ? index + 1 : nil) {
                         copyToClipboard(item)
                     }
                 }
@@ -26,7 +30,7 @@ struct MenuBarView: View {
 
             Divider()
 
-            Button("Очистить историю...") {
+            Button(L10n("menubar.clearHistory")) {
                 AppState.shared.clearHistory()
                 menuItems = []
             }
@@ -34,7 +38,7 @@ struct MenuBarView: View {
 
             Divider()
 
-            Button("Проверить обновления...") {
+            Button(L10n("menubar.checkUpdates")) {
                 Task {
                     await AppState.shared.updater.checkForUpdates()
                 }
@@ -44,7 +48,7 @@ struct MenuBarView: View {
 
             Divider()
 
-            Button("Настройки...") {
+            Button(L10n("menubar.settings")) {
                 NSApplication.shared.activate()
                 openSettings()
             }
@@ -52,7 +56,7 @@ struct MenuBarView: View {
 
             Divider()
 
-            Button("Поддержать") {
+            Button(L10n("menubar.support")) {
                 if let url = URL(string: "https://tirikchilik.uz/kodyatemirov") {
                     NSWorkspace.shared.open(url)
                 }
@@ -60,7 +64,7 @@ struct MenuBarView: View {
 
             Divider()
 
-            Button("Выход") {
+            Button(L10n("menubar.quit")) {
                 NSApplication.shared.terminate(nil)
             }
             .keyboardShortcut("Q", modifiers: .command)
@@ -84,10 +88,11 @@ struct MenuBarView: View {
 
 private struct MenuBarItemRow: View {
     let item: ClipItem
+    var shortcutIndex: Int? = nil
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        let button = Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: item.contentType.systemImage)
                     .foregroundStyle(.secondary)
@@ -104,6 +109,12 @@ private struct MenuBarItemRow: View {
                     .foregroundStyle(.tertiary)
             }
         }
+
+        if let index = shortcutIndex {
+            button.keyboardShortcut(KeyEquivalent(Character("\(index)")), modifiers: .command)
+        } else {
+            button
+        }
     }
 
     private var itemLabel: String {
@@ -111,13 +122,13 @@ private struct MenuBarItemRow: View {
         case .text, .richText, .url, .color:
             return item.displayText
         case .image:
-            return "Изображение"
+            return L10n("menubar.image")
         case .file:
             let paths = item.filePathsArray
             if let first = paths.first {
                 return (first as NSString).lastPathComponent
             }
-            return "Файл"
+            return L10n("menubar.file")
         }
     }
 }

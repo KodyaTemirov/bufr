@@ -17,10 +17,10 @@ struct CreatePinboardSheet: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Новая доска")
+            Text(L10n("pinboard.create.title"))
                 .font(.headline)
 
-            TextField("Название", text: $name)
+            TextField(L10n("pinboard.name"), text: $name)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit {
                     guard !name.isEmpty else { return }
@@ -30,7 +30,7 @@ struct CreatePinboardSheet: View {
 
             // Color picker
             VStack(alignment: .leading, spacing: 6) {
-                Text("Цвет")
+                Text(L10n("pinboard.color"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -65,13 +65,13 @@ struct CreatePinboardSheet: View {
             }
 
             HStack {
-                Button("Отмена") {
+                Button(L10n("common.cancel")) {
                     dismiss()
                 }
 
                 Spacer()
 
-                Button("Создать") {
+                Button(L10n("pinboard.create")) {
                     guard !name.isEmpty else { return }
                     onCreate(name, nil, selectedColor)
                     dismiss()

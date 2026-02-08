@@ -1,0 +1,222 @@
+/* Settings Tabs */
+"settings.tab.general" = "Asosiy";
+"settings.tab.hotkeys" = "Tezkor tugmalar";
+"settings.tab.exclusions" = "Istisno";
+"settings.tab.updates" = "Yangilanishlar";
+"settings.tab.about" = "Dastur haqida";
+
+/* General Settings - Retention */
+"general.retention.header" = "Tarixni saqlash";
+"general.retention.day" = "Kun";
+"general.retention.week" = "Hafta";
+"general.retention.month" = "Oy";
+"general.retention.year" = "Yil";
+"general.retention.forever" = "Cheksiz";
+"general.retention.clear" = "Tarixni o'chirish...";
+"general.retention.confirm.title" = "Tarixni o'chirish?";
+"general.retention.confirm.action" = "O'chirish";
+"general.retention.confirm.message" = "Barcha nusxalash tarixi o'chiriladi.";
+
+/* General Settings - Language */
+"general.language.header" = "Til";
+"general.language.picker" = "Interfeys tili";
+
+/* General Settings - Paste */
+"general.paste.header" = "Joylashtirish";
+"general.paste.activeApp" = "Faol ilovaga";
+"general.paste.activeApp.desc" = "Tanlangan elementlarni hozirda foydalanilayotgan ilovaga bevosita joylashtirish.";
+"general.paste.clipboard" = "Vaqtinchalik xotiraga";
+"general.paste.clipboard.desc" = "Tanlangan elementlarni tizim vaqtinchalik xotirasiga nusxalash, keyinroq qo'lda joylashtirish uchun.";
+"general.paste.plainText" = "Har doim formatsiz joylashtirish";
+
+/* General Settings - Panel */
+"general.panel.header" = "Panel";
+"general.panel.position" = "Panel joylashuvi";
+"general.panel.bottom" = "Pastda";
+"general.panel.top" = "Yuqorida";
+
+/* General Settings - System */
+"general.system.header" = "Tizim";
+"general.system.launchAtLogin" = "Tizim ishga tushganda ochish";
+"general.system.playCopySound" = "Nusxalashda ovoz";
+"general.system.copySound" = "Ovoz";
+
+/* General Settings - Boards */
+"general.boards.header" = "Doskalar";
+"general.boards.exportAll" = "Barcha doskalarni eksport qilish";
+"general.boards.import" = "Doskalarni import qilish...";
+"general.boards.deleteAll" = "Barcha doskalarni o'chirish";
+"general.boards.confirm.title" = "Barcha doskalarni o'chirish?";
+"general.boards.confirm.action" = "O'chirish";
+"general.boards.confirm.message" = "Barcha doskalar va ularga bog'lanishlar o'chiriladi.";
+
+/* Common */
+"common.error" = "Xatolik";
+"common.done" = "Tayyor";
+"common.ok" = "OK";
+"common.cancel" = "Bekor qilish";
+"common.save" = "Saqlash";
+"common.delete" = "O'chirish";
+"common.close" = "Yopish";
+"common.export.success" = "%@ ga eksport qilindi";
+"common.import.success" = "Import qilingan doskalar: %d — %@";
+
+/* About */
+"about.header" = "Dastur haqida";
+"about.version" = "Versiya %@";
+"about.website" = "Veb-sayt";
+"about.github" = "GitHub";
+"about.support" = "Dasturchi qo'llab-quvvatlash";
+"about.deleteData.header" = "Ma'lumotlarni o'chirish";
+"about.deleteAll" = "Hammasini o'chirish";
+"about.deleteAll.confirm.title" = "Hammasini o'chirish?";
+"about.deleteAll.confirm.action" = "Hammasini o'chirish";
+"about.deleteAll.confirm.message" = "Barcha tarix va doskalar o'chiriladi.";
+
+/* Updates */
+"updates.header" = "Yangilanishlar";
+"updates.autoCheck" = "Avtomatik tekshirish";
+"updates.checkNow" = "Yangilanishlarni tekshirish";
+"updates.checking" = "Tekshirilmoqda...";
+"updates.upToDate" = "Oxirgi versiya o'rnatilgan";
+"updates.available" = "Versiya %@ mavjud";
+"updates.lastCheck" = "Oxirgi tekshirish:";
+"updates.lastCheck.suffix" = "oldin";
+
+/* Exclusions */
+"exclusions.header" = "Istisno qilingan ilovalar";
+"exclusions.description" = "Bufr ushbu ilovalardan vaqtinchalik xotira ma'lumotlarini saqlamaydi.";
+"exclusions.empty" = "Istisnolar yo'q";
+"exclusions.add" = "Qo'shish";
+"exclusions.remove" = "O'chirish";
+
+/* Hotkeys */
+"hotkeys.header" = "Global tezkor tugma";
+"hotkeys.openPanel" = "Panelni ochish";
+"hotkeys.prompt" = "Tugmalar kombinatsiyasini bosing...";
+"hotkeys.record" = "Yangi tezkor tugma yozish";
+"hotkeys.reset" = "Tiklash";
+"hotkeys.tip.header" = "Maslahat";
+"hotkeys.tip.text" = "Tezkor tugma global ishlaydi — panel istalgan ilovadan ochiladi.";
+
+/* Panel */
+"panel.clipboard" = "Vaqtinchalik xotira";
+"panel.edit" = "Tahrirlash";
+"panel.exportBoard" = "Doskani eksport qilish...";
+"panel.rename" = "Nomini o'zgartirish";
+"panel.name" = "Nomi";
+"panel.resetName" = "Tiklash";
+"panel.confirmDeleteBoard" = "«%@» doskasini o'chirish?";
+
+"panel.hint.navigation" = "navigatsiya";
+"panel.hint.paste" = "joylashtirish";
+"panel.hint.plainText" = "oddiy matn";
+"panel.hint.quickPaste" = "tez joylashtirish";
+"panel.hint.preview" = "ko'rish";
+"panel.hint.close" = "yopish";
+
+"panel.empty.board" = "Doska bo'sh";
+"panel.empty.board.hint" = "Kontekst menyu orqali elementlar qo'shing";
+"panel.empty.history" = "Tarix bo'sh";
+"panel.empty.history.hint" = "Boshlash uchun biror narsani nusxalang";
+"panel.empty.noResults" = "Hech narsa topilmadi";
+"panel.empty.noResults.hint" = "So'rovni o'zgartirib ko'ring";
+
+/* Card */
+"card.addToBoard" = "Doskaga qo'shish";
+"card.copy" = "Nusxalash";
+"card.rename" = "Nomini o'zgartirish";
+"card.characters" = "%d belgi";
+"card.files" = "%d fayl";
+"card.file.one" = "1 fayl";
+"card.time.now" = "hozirgina";
+"card.time.minutes" = "%d daq oldin";
+"card.time.hours" = "%d soat oldin";
+"card.time.days" = "%d kun oldin";
+
+/* Search */
+"search.placeholder" = "Qidirish...";
+
+/* Preview */
+"preview.edit" = "Tahrirlash";
+"preview.save" = "Saqlash";
+"preview.from" = "%@ dan";
+
+/* Pinboard */
+"pinboard.create.title" = "Yangi doska";
+"pinboard.edit.title" = "Doskani tahrirlash";
+"pinboard.name" = "Nomi";
+"pinboard.color" = "Rang";
+"pinboard.create" = "Yaratish";
+
+/* App Picker */
+"appPicker.title" = "Ilovani tanlang";
+
+/* Menu Bar */
+"menubar.openPanel" = "Panelni ochish  ⌘⇧V";
+"menubar.historyEmpty" = "Tarix bo'sh";
+"menubar.clearHistory" = "Tarixni tozalash...";
+"menubar.checkUpdates" = "Yangilanishlarni tekshirish...";
+"menubar.settings" = "Sozlamalar...";
+"menubar.support" = "Qo'llab-quvvatlash";
+"menubar.quit" = "Chiqish";
+"menubar.image" = "Rasm";
+"menubar.file" = "Fayl";
+
+/* Update Alert */
+"updateAlert.title" = "Yangilanish mavjud";
+"updateAlert.newVersion" = "Yangi versiya: %@";
+"updateAlert.currentVersion" = "Joriy versiya: %@";
+"updateAlert.whatsNew" = "Yangiliklar";
+"updateAlert.downloading" = "Yuklanmoqda... %d%%";
+"updateAlert.installing" = "O'rnatilmoqda...";
+"updateAlert.later" = "Keyinroq";
+"updateAlert.download" = "Yuklash va o'rnatish";
+"updateAlert.installRestart" = "O'rnatish va qayta ishga tushirish";
+"updateAlert.retry" = "Qayta urinish";
+
+/* Onboarding */
+"onboarding.page1.title" = "Bufr ga xush kelibsiz";
+"onboarding.page1.subtitle" = "macOS uchun bepul vaqtinchalik xotira boshqaruvchisi";
+"onboarding.page1.description" = "Bufr nusxalagan hamma narsangizni avtomatik saqlaydi — matn, rasmlar, fayllar, havolalar va ranglar.";
+"onboarding.page2.title" = "Tezkor kirish";
+"onboarding.page2.subtitle" = "⌘⇧V — sizning tezkor tugmangiz";
+"onboarding.page2.description" = "Bufr panelini ochish uchun istalgan ilovada ⌘⇧V bosing. Navigatsiya uchun strelkalardan va joylashtirish uchun Enter dan foydalaning.";
+"onboarding.page3.title" = "Tezkor qidirish";
+"onboarding.page3.subtitle" = "Kerakli narsani soniyalarda toping";
+"onboarding.page3.description" = "Tarix bo'ylab qidirish uchun matn yozishni boshlang. Kontent turiga ko'ra saralash uchun filtrlardan foydalaning.";
+"onboarding.page4.title" = "Doskalar";
+"onboarding.page4.subtitle" = "Muhim narsalarni tartibga soling";
+"onboarding.page4.description" = "Mavzuli doskalar yarating va kontekst menyu orqali elementlar qo'shing (kartochkaga o'ng tugma bosing).";
+"onboarding.back" = "Orqaga";
+"onboarding.next" = "Keyingi";
+"onboarding.start" = "Boshlash";
+
+/* Content Types */
+"contentType.text" = "Matn";
+"contentType.richText" = "Formatlangan";
+"contentType.image" = "Rasm";
+"contentType.file" = "Fayl";
+"contentType.url" = "Havola";
+"contentType.color" = "Rang";
+
+/* Errors - Updater */
+"error.update.checkFailed" = "Yangilanishlarni tekshirib bo'lmadi";
+"error.update.parseRelease" = "Reliz ma'lumotlarini tahlil qilib bo'lmadi";
+"error.update.currentVersion" = "Joriy versiyani aniqlab bo'lmadi";
+"error.update.check" = "Tekshirish xatoligi: %@";
+"error.update.hashMismatch" = "Fayl xeshi mos kelmadi";
+"error.update.download" = "Yuklash xatoligi: %@";
+"error.update.install" = "O'rnatish xatoligi: %@";
+"error.update.extraction" = "Arxiv ochish xatoligi: %@";
+"error.update.noApp" = "Arxivda .app topilmadi";
+
+/* Errors - Export */
+"error.export.empty" = "Doska bo'sh, eksport qilish uchun hech narsa yo'q";
+"error.export.zipCreate" = "Arxiv yaratish xatoligi: %@";
+"error.export.zipExtract" = "Arxiv ochish xatoligi: %@";
+"error.export.invalid" = "Noto'g'ri .bufr fayl";
+"error.export.version" = "Qo'llab-quvvatlanmaydigan format versiyasi: %d";
+"error.export.decode" = "Ma'lumotlarni o'qish xatoligi: %@";
+"error.export.importTitle" = "Doskani import qilish";
+"error.export.importAllTitle" = "Doskalarni import qilish";

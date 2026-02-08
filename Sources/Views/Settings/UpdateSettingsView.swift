@@ -9,10 +9,10 @@ struct UpdateSettingsView: View {
 
         Form {
             Section {
-                Toggle("Проверять автоматически", isOn: Bindable(state).updater.autoCheckEnabled)
+                Toggle(L10n("updates.autoCheck"), isOn: Bindable(state).updater.autoCheckEnabled)
 
                 HStack {
-                    Button("Проверить обновления") {
+                    Button(L10n("updates.checkNow")) {
                         Task { await appState.updater.checkForUpdates() }
                     }
                     .disabled(appState.updater.status == .checking)
@@ -23,12 +23,16 @@ struct UpdateSettingsView: View {
                 }
 
                 if let lastCheck = appState.updater.lastCheckDate {
-                    Text("Последняя проверка: \(lastCheck, style: .relative) назад")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
+                    HStack(spacing: 0) {
+                        Text(L10n("updates.lastCheck"))
+                        Text(lastCheck, style: .relative)
+                        Text(L10n("updates.lastCheck.suffix"))
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
                 }
             } header: {
-                Label("Обновления", systemImage: "arrow.triangle.2.circlepath")
+                Label(L10n("updates.header"), systemImage: "arrow.triangle.2.circlepath")
             }
         }
         .formStyle(.grouped)
@@ -50,16 +54,16 @@ struct UpdateSettingsView: View {
             HStack(spacing: 4) {
                 ProgressView()
                     .controlSize(.small)
-                Text("Проверка...")
+                Text(L10n("updates.checking"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         case .noUpdate:
-            Text("Установлена последняя версия")
+            Text(L10n("updates.upToDate"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         case .available(let version):
-            Button("Версия \(version) доступна") {
+            Button(L10n("updates.available", version)) {
                 showUpdateSheet = true
             }
             .font(.caption)

@@ -3,7 +3,6 @@ import SwiftUI
 struct AboutSettingsView: View {
     @Environment(AppState.self) private var appState
 
-    @State private var confirmDeleteBoards = false
     @State private var confirmDeleteAll = false
 
     var body: some View {
@@ -20,7 +19,7 @@ struct AboutSettingsView: View {
                         Text("Bufr")
                             .font(.system(.title3, design: .rounded, weight: .semibold))
                         if let version = AppVersion.current {
-                            Text("Версия \(version.description)")
+                            Text(L10n("about.version", version.description))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -29,43 +28,31 @@ struct AboutSettingsView: View {
                     Spacer()
                 }
 
-                Link("Сайт", destination: URL(string: "https://bufr.uz/")!)
+                Link(L10n("about.website"), destination: URL(string: "https://bufr.uz/")!)
                 Link("GitHub", destination: URL(string: "https://github.com/KodyaTemirov/bufr")!)
-                Link("Поддержать разработчика", destination: URL(string: "https://tirikchilik.uz/kodyatemirov")!)
+                Link(L10n("about.support"), destination: URL(string: "https://tirikchilik.uz/kodyatemirov")!)
             } header: {
-                Label("О приложении", systemImage: "info.circle")
+                Label(L10n("about.header"), systemImage: "info.circle")
             }
 
             // MARK: - Удаление данных
             Section {
-                Button("Удалить все доски") {
-                    confirmDeleteBoards = true
-                }
-                .foregroundStyle(.red)
-
-                Button("Удалить всё") {
+                Button(L10n("about.deleteAll")) {
                     confirmDeleteAll = true
                 }
                 .foregroundStyle(.red)
             } header: {
-                Label("Удаление данных", systemImage: "trash")
+                Label(L10n("about.deleteData.header"), systemImage: "trash")
             }
         }
         .formStyle(.grouped)
-        .confirmationDialog("Удалить все доски?", isPresented: $confirmDeleteBoards, titleVisibility: .visible) {
-            Button("Удалить", role: .destructive) {
-                appState.deleteAllBoards()
-            }
-        } message: {
-            Text("Все доски и привязки к ним будут удалены.")
-        }
-        .confirmationDialog("Удалить всё?", isPresented: $confirmDeleteAll, titleVisibility: .visible) {
-            Button("Удалить всё", role: .destructive) {
+        .confirmationDialog(L10n("about.deleteAll.confirm.title"), isPresented: $confirmDeleteAll, titleVisibility: .visible) {
+            Button(L10n("about.deleteAll.confirm.action"), role: .destructive) {
                 appState.deleteAllBoards()
                 appState.clearHistory()
             }
         } message: {
-            Text("Вся история и все доски будут удалены.")
+            Text(L10n("about.deleteAll.confirm.message"))
         }
     }
 }

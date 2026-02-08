@@ -1,0 +1,222 @@
+/* Settings Tabs */
+"settings.tab.general" = "General";
+"settings.tab.hotkeys" = "Hotkeys";
+"settings.tab.exclusions" = "Exclusions";
+"settings.tab.updates" = "Updates";
+"settings.tab.about" = "About";
+
+/* General Settings - Retention */
+"general.retention.header" = "Keep History";
+"general.retention.day" = "Day";
+"general.retention.week" = "Week";
+"general.retention.month" = "Month";
+"general.retention.year" = "Year";
+"general.retention.forever" = "Forever";
+"general.retention.clear" = "Clear History...";
+"general.retention.confirm.title" = "Clear History?";
+"general.retention.confirm.action" = "Clear";
+"general.retention.confirm.message" = "All clipboard history will be deleted.";
+
+/* General Settings - Language */
+"general.language.header" = "Language";
+"general.language.picker" = "Interface Language";
+
+/* General Settings - Paste */
+"general.paste.header" = "Paste";
+"general.paste.activeApp" = "Into Active App";
+"general.paste.activeApp.desc" = "Paste selected items directly into the currently active application.";
+"general.paste.clipboard" = "To Clipboard";
+"general.paste.clipboard.desc" = "Copy selected items to the system clipboard to paste them manually later.";
+"general.paste.plainText" = "Always paste as plain text";
+
+/* General Settings - Panel */
+"general.panel.header" = "Panel";
+"general.panel.position" = "Panel Position";
+"general.panel.bottom" = "Bottom";
+"general.panel.top" = "Top";
+
+/* General Settings - System */
+"general.system.header" = "System";
+"general.system.launchAtLogin" = "Launch at Login";
+"general.system.playCopySound" = "Sound on Copy";
+"general.system.copySound" = "Sound";
+
+/* General Settings - Boards */
+"general.boards.header" = "Boards";
+"general.boards.exportAll" = "Export All Boards";
+"general.boards.import" = "Import Boards...";
+"general.boards.deleteAll" = "Delete All Boards";
+"general.boards.confirm.title" = "Delete All Boards?";
+"general.boards.confirm.action" = "Delete";
+"general.boards.confirm.message" = "All boards and their bindings will be deleted.";
+
+/* Common */
+"common.error" = "Error";
+"common.done" = "Done";
+"common.ok" = "OK";
+"common.cancel" = "Cancel";
+"common.save" = "Save";
+"common.delete" = "Delete";
+"common.close" = "Close";
+"common.export.success" = "Exported to %@";
+"common.import.success" = "Imported boards: %d — %@";
+
+/* About */
+"about.header" = "About";
+"about.version" = "Version %@";
+"about.website" = "Website";
+"about.github" = "GitHub";
+"about.support" = "Support Developer";
+"about.deleteData.header" = "Delete Data";
+"about.deleteAll" = "Delete Everything";
+"about.deleteAll.confirm.title" = "Delete Everything?";
+"about.deleteAll.confirm.action" = "Delete Everything";
+"about.deleteAll.confirm.message" = "All history and boards will be deleted.";
+
+/* Updates */
+"updates.header" = "Updates";
+"updates.autoCheck" = "Check Automatically";
+"updates.checkNow" = "Check for Updates";
+"updates.checking" = "Checking...";
+"updates.upToDate" = "Latest version installed";
+"updates.available" = "Version %@ available";
+"updates.lastCheck" = "Last check:";
+"updates.lastCheck.suffix" = "ago";
+
+/* Exclusions */
+"exclusions.header" = "Excluded Apps";
+"exclusions.description" = "Bufr will not save clipboard data from these applications.";
+"exclusions.empty" = "No exclusions";
+"exclusions.add" = "Add";
+"exclusions.remove" = "Remove";
+
+/* Hotkeys */
+"hotkeys.header" = "Global Hotkey";
+"hotkeys.openPanel" = "Open Panel";
+"hotkeys.prompt" = "Press a key combination...";
+"hotkeys.record" = "Record New Hotkey";
+"hotkeys.reset" = "Reset";
+"hotkeys.tip.header" = "Tip";
+"hotkeys.tip.text" = "The hotkey works globally — the panel will open from any application.";
+
+/* Panel */
+"panel.clipboard" = "Clipboard";
+"panel.edit" = "Edit";
+"panel.exportBoard" = "Export Board...";
+"panel.rename" = "Rename";
+"panel.name" = "Name";
+"panel.resetName" = "Reset";
+"panel.confirmDeleteBoard" = "Delete board \"%@\"?";
+
+"panel.hint.navigation" = "navigate";
+"panel.hint.paste" = "paste";
+"panel.hint.plainText" = "plain text";
+"panel.hint.quickPaste" = "quick paste";
+"panel.hint.preview" = "preview";
+"panel.hint.close" = "close";
+
+"panel.empty.board" = "Board is empty";
+"panel.empty.board.hint" = "Add items via context menu";
+"panel.empty.history" = "History is empty";
+"panel.empty.history.hint" = "Copy something to get started";
+"panel.empty.noResults" = "Nothing found";
+"panel.empty.noResults.hint" = "Try changing your query";
+
+/* Card */
+"card.addToBoard" = "Add to Board";
+"card.copy" = "Copy";
+"card.rename" = "Rename";
+"card.characters" = "%d characters";
+"card.files" = "%d files";
+"card.file.one" = "1 file";
+"card.time.now" = "just now";
+"card.time.minutes" = "%d min ago";
+"card.time.hours" = "%d h ago";
+"card.time.days" = "%d d ago";
+
+/* Search */
+"search.placeholder" = "Search...";
+
+/* Preview */
+"preview.edit" = "Edit";
+"preview.save" = "Save";
+"preview.from" = "from %@";
+
+/* Pinboard */
+"pinboard.create.title" = "New Board";
+"pinboard.edit.title" = "Edit Board";
+"pinboard.name" = "Name";
+"pinboard.color" = "Color";
+"pinboard.create" = "Create";
+
+/* App Picker */
+"appPicker.title" = "Select Application";
+
+/* Menu Bar */
+"menubar.openPanel" = "Open Panel  ⌘⇧V";
+"menubar.historyEmpty" = "History is empty";
+"menubar.clearHistory" = "Clear History...";
+"menubar.checkUpdates" = "Check for Updates...";
+"menubar.settings" = "Settings...";
+"menubar.support" = "Support";
+"menubar.quit" = "Quit";
+"menubar.image" = "Image";
+"menubar.file" = "File";
+
+/* Update Alert */
+"updateAlert.title" = "Update Available";
+"updateAlert.newVersion" = "New version: %@";
+"updateAlert.currentVersion" = "Current version: %@";
+"updateAlert.whatsNew" = "What's New";
+"updateAlert.downloading" = "Downloading... %d%%";
+"updateAlert.installing" = "Installing...";
+"updateAlert.later" = "Later";
+"updateAlert.download" = "Download and Install";
+"updateAlert.installRestart" = "Install and Restart";
+"updateAlert.retry" = "Retry";
+
+/* Onboarding */
+"onboarding.page1.title" = "Welcome to Bufr";
+"onboarding.page1.subtitle" = "Free clipboard manager for macOS";
+"onboarding.page1.description" = "Bufr automatically saves everything you copy — text, images, files, links, and colors.";
+"onboarding.page2.title" = "Quick Access";
+"onboarding.page2.subtitle" = "⌘⇧V — your hotkey";
+"onboarding.page2.description" = "Press ⌘⇧V in any app to open the Bufr panel. Use arrow keys to navigate and Enter to paste.";
+"onboarding.page3.title" = "Instant Search";
+"onboarding.page3.subtitle" = "Find what you need in seconds";
+"onboarding.page3.description" = "Start typing to search through history. Use filters to sort by content type.";
+"onboarding.page4.title" = "Boards";
+"onboarding.page4.subtitle" = "Organize what matters";
+"onboarding.page4.description" = "Create themed boards and add items via context menu (right-click on a card).";
+"onboarding.back" = "Back";
+"onboarding.next" = "Next";
+"onboarding.start" = "Get Started";
+
+/* Content Types */
+"contentType.text" = "Text";
+"contentType.richText" = "Rich Text";
+"contentType.image" = "Image";
+"contentType.file" = "File";
+"contentType.url" = "Link";
+"contentType.color" = "Color";
+
+/* Errors - Updater */
+"error.update.checkFailed" = "Failed to check for updates";
+"error.update.parseRelease" = "Failed to parse release data";
+"error.update.currentVersion" = "Could not determine current version";
+"error.update.check" = "Check error: %@";
+"error.update.hashMismatch" = "File hash mismatch";
+"error.update.download" = "Download error: %@";
+"error.update.install" = "Installation error: %@";
+"error.update.extraction" = "Extraction error: %@";
+"error.update.noApp" = ".app not found in archive";
+
+/* Errors - Export */
+"error.export.empty" = "Board is empty, nothing to export";
+"error.export.zipCreate" = "Archive creation error: %@";
+"error.export.zipExtract" = "Archive extraction error: %@";
+"error.export.invalid" = "Invalid .bufr file";
+"error.export.version" = "Unsupported format version: %d";
+"error.export.decode" = "Data reading error: %@";
+"error.export.importTitle" = "Import Board";
+"error.export.importAllTitle" = "Import Boards";

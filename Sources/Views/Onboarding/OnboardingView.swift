@@ -6,32 +6,34 @@ struct OnboardingView: View {
 
     @State private var currentPage = 0
 
-    private let pages: [OnboardingPage] = [
-        OnboardingPage(
-            icon: "clipboard",
-            title: "Добро пожаловать в Bufr",
-            subtitle: "Бесплатный менеджер буфера обмена для macOS",
-            description: "Bufr автоматически сохраняет всё, что вы копируете — текст, изображения, файлы, ссылки и цвета."
-        ),
-        OnboardingPage(
-            icon: "command",
-            title: "Быстрый доступ",
-            subtitle: "⌘⇧V — ваш горячий клавиш",
-            description: "Нажмите ⌘⇧V в любом приложении, чтобы открыть панель Bufr. Используйте стрелки для навигации и Enter для вставки."
-        ),
-        OnboardingPage(
-            icon: "magnifyingglass",
-            title: "Мгновенный поиск",
-            subtitle: "Находите нужное за секунды",
-            description: "Начните вводить текст для поиска по истории. Используйте фильтры для сортировки по типу контента."
-        ),
-        OnboardingPage(
-            icon: "rectangle.on.rectangle",
-            title: "Доски",
-            subtitle: "Организуйте важное",
-            description: "Создавайте тематические доски и добавляйте элементы через контекстное меню (правый клик на карточке)."
-        ),
-    ]
+    private var pages: [OnboardingPage] {
+        [
+            OnboardingPage(
+                icon: "clipboard",
+                title: L10n("onboarding.page1.title"),
+                subtitle: L10n("onboarding.page1.subtitle"),
+                description: L10n("onboarding.page1.description")
+            ),
+            OnboardingPage(
+                icon: "command",
+                title: L10n("onboarding.page2.title"),
+                subtitle: L10n("onboarding.page2.subtitle"),
+                description: L10n("onboarding.page2.description")
+            ),
+            OnboardingPage(
+                icon: "magnifyingglass",
+                title: L10n("onboarding.page3.title"),
+                subtitle: L10n("onboarding.page3.subtitle"),
+                description: L10n("onboarding.page3.description")
+            ),
+            OnboardingPage(
+                icon: "rectangle.on.rectangle",
+                title: L10n("onboarding.page4.title"),
+                subtitle: L10n("onboarding.page4.subtitle"),
+                description: L10n("onboarding.page4.description")
+            ),
+        ]
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -59,7 +61,7 @@ struct OnboardingView: View {
             // Navigation buttons
             HStack {
                 if currentPage > 0 {
-                    Button("Назад") {
+                    Button(L10n("onboarding.back")) {
                         withAnimation { currentPage -= 1 }
                     }
                     .buttonStyle(.plain)
@@ -69,12 +71,12 @@ struct OnboardingView: View {
                 Spacer()
 
                 if currentPage < pages.count - 1 {
-                    Button("Далее") {
+                    Button(L10n("onboarding.next")) {
                         withAnimation { currentPage += 1 }
                     }
                     .buttonStyle(.borderedProminent)
                 } else {
-                    Button("Начать работу") {
+                    Button(L10n("onboarding.start")) {
                         onComplete()
                         dismiss()
                     }

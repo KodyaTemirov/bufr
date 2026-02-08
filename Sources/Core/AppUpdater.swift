@@ -35,9 +35,9 @@ enum UpdateError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .extractionFailed(let msg): return "Ошибка распаковки: \(msg)"
-        case .noAppBundleFound: return "Не найден .app в архиве"
-        case .hashMismatch: return "Хэш файла не совпадает"
+        case .extractionFailed(let msg): return L10n("error.update.extraction", msg)
+        case .noAppBundleFound: return L10n("error.update.noApp")
+        case .hashMismatch: return L10n("error.update.hashMismatch")
         }
     }
 }
@@ -90,18 +90,18 @@ final class AppUpdater {
             guard let httpResponse = response as? HTTPURLResponse,
                 httpResponse.statusCode == 200
             else {
-                status = .error(message: "Не удалось проверить обновления")
+                status = .error(message: L10n("error.update.checkFailed"))
                 return
             }
 
             let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
             guard let release = parseRelease(json) else {
-                status = .error(message: "Не удалось разобрать данные релиза")
+                status = .error(message: L10n("error.update.parseRelease"))
                 return
             }
 
             guard let currentVersion = AppVersion.current else {
-                status = .error(message: "Не удалось определить текущую версию")
+                status = .error(message: L10n("error.update.currentVersion"))
                 return
             }
 
@@ -115,7 +115,7 @@ final class AppUpdater {
             }
         } catch {
             logger.error("Update check failed: \(error.localizedDescription, privacy: .public)")
-            status = .error(message: "Ошибка проверки: \(error.localizedDescription)")
+            status = .error(message: L10n("error.update.check", error.localizedDescription))
         }
     }
 
@@ -167,7 +167,7 @@ final class AppUpdater {
             if let expectedHash = release.sha256 {
                 let actualHash = try sha256Hash(of: zipURL)
                 guard actualHash == expectedHash else {
-                    status = .error(message: "Ошибка верификации: хэш файла не совпадает")
+                    status = .error(message: L10n("error.update.hashMismatch"))
                     try? FileManager.default.removeItem(at: destDir)
                     return
                 }
@@ -178,7 +178,7 @@ final class AppUpdater {
             status = .readyToInstall
         } catch {
             logger.error("Download failed: \(error.localizedDescription, privacy: .public)")
-            status = .error(message: "Ошибка загрузки: \(error.localizedDescription)")
+            status = .error(message: L10n("error.update.download", error.localizedDescription))
         }
     }
 
@@ -230,7 +230,7 @@ final class AppUpdater {
             exit(0)
         } catch {
             logger.error("Install failed: \(error.localizedDescription, privacy: .public)")
-            status = .error(message: "Ошибка установки: \(error.localizedDescription)")
+            status = .error(message: L10n("error.update.install", error.localizedDescription))
         }
     }
 

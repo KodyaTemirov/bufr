@@ -33,7 +33,7 @@ struct QuickPreviewView: View {
                             }
                         } label: {
                             Label(
-                                isEditing ? "Сохранить" : "Редактировать",
+                                isEditing ? L10n("common.save") : L10n("preview.edit"),
                                 systemImage: isEditing ? "checkmark.circle" : "pencil"
                             )
                             .font(.caption)
@@ -45,7 +45,7 @@ struct QuickPreviewView: View {
                             Button {
                                 isEditing = false
                             } label: {
-                                Text("Отмена")
+                                Text(L10n("common.cancel"))
                                     .font(.caption)
                             }
                             .buttonStyle(.plain)
@@ -83,7 +83,7 @@ struct QuickPreviewView: View {
                         .foregroundStyle(.secondary)
 
                     if let app = item.sourceAppName {
-                        Text("из \(app)")
+                        Text(L10n("preview.from", app))
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                     }

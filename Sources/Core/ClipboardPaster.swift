@@ -38,9 +38,25 @@ final class ClipboardPaster {
     }
 
     /// Copy item to clipboard without pasting
-    func copyToClipboard(_ item: ClipItem) {
+    func copyToClipboard(_ item: ClipItem, asPlainText: Bool = false) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
+
+        if asPlainText {
+            pasteboard.setString(item.textContent ?? "", forType: .string)
+            return
+        }
+
+        if item.contentType == .image, let imagePath = item.imagePath {
+            Task {
+                if let image = await ImageStorage.shared.loadImage(filename: imagePath),
+                   let tiffData = image.tiffRepresentation {
+                    pasteboard.setData(tiffData, forType: .tiff)
+                }
+            }
+            return
+        }
+
         writeOriginalFormat(item, to: pasteboard)
     }
 

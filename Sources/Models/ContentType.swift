@@ -12,12 +12,12 @@ enum ContentType: String, Codable, CaseIterable, DatabaseValueConvertible {
 
     var displayName: String {
         switch self {
-        case .text:     "Текст"
-        case .richText: "Форматированный"
-        case .image:    "Изображение"
-        case .file:     "Файл"
-        case .url:      "Ссылка"
-        case .color:    "Цвет"
+        case .text:     L10n("contentType.text")
+        case .richText: L10n("contentType.richText")
+        case .image:    L10n("contentType.image")
+        case .file:     L10n("contentType.file")
+        case .url:      L10n("contentType.url")
+        case .color:    L10n("contentType.color")
         }
     }
 

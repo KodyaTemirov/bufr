@@ -2,12 +2,12 @@ import ServiceManagement
 import SwiftUI
 
 private let retentionSteps = [1, 7, 30, 365, 0]
-private let retentionLabels = ["День", "Неделя", "Месяц", "Год", "Бесконечно"]
 
 struct GeneralSettingsView: View {
     @Environment(AppState.self) private var appState
 
     @State private var confirmClearHistory = false
+    @State private var confirmDeleteBoards = false
     @State private var exportImportError: String?
     @State private var showExportImportError = false
     @State private var successMessage: String?
@@ -19,84 +19,153 @@ struct GeneralSettingsView: View {
         Form {
             // MARK: - Сохранять историю
             Section {
-                VStack(spacing: 8) {
-                    Slider(
-                        value: Binding(
-                            get: { Double(retentionSteps.firstIndex(of: state.retentionPeriod) ?? 2) },
-                            set: { state.retentionPeriod = retentionSteps[Int($0)] }
-                        ),
-                        in: 0...Double(retentionSteps.count - 1),
-                        step: 1
-                    )
+                LabeledContent {} label: {
+                    let retentionLabels = [
+                        L10n("general.retention.day"),
+                        L10n("general.retention.week"),
+                        L10n("general.retention.month"),
+                        L10n("general.retention.year"),
+                        L10n("general.retention.forever"),
+                    ]
 
-                    HStack {
-                        ForEach(retentionLabels.indices, id: \.self) { i in
-                            Text(retentionLabels[i])
-                                .font(.caption2)
-                                .fontWeight(retentionSteps[i] == appState.retentionPeriod ? .semibold : .regular)
-                                .foregroundStyle(retentionSteps[i] == appState.retentionPeriod ? .primary : .secondary)
-                            if i < retentionLabels.count - 1 { Spacer() }
+                    VStack(spacing: 8) {
+                        Slider(
+                            value: Binding(
+                                get: { Double(retentionSteps.firstIndex(of: state.retentionPeriod) ?? 2) },
+                                set: { state.retentionPeriod = retentionSteps[Int($0)] }
+                            ),
+                            in: 0...Double(retentionSteps.count - 1),
+                            step: 1
+                        )
+
+                        HStack {
+                            ForEach(retentionLabels.indices, id: \.self) { i in
+                                Text(retentionLabels[i])
+                                    .font(.caption2)
+                                    .fontWeight(retentionSteps[i] == appState.retentionPeriod ? .semibold : .regular)
+                                    .foregroundStyle(retentionSteps[i] == appState.retentionPeriod ? .primary : .secondary)
+                                if i < retentionLabels.count - 1 { Spacer() }
+                            }
                         }
                     }
                 }
-                .gridCellColumns(2)
 
-                Button("Стереть историю...") {
+                Button(L10n("general.retention.clear")) {
                     confirmClearHistory = true
                 }
                 .foregroundStyle(.red)
             } header: {
-                Label("Сохранять историю", systemImage: "clock.arrow.circlepath")
+                Label(L10n("general.retention.header"), systemImage: "clock.arrow.circlepath")
+            }
+
+            // MARK: - Вставка
+            Section {
+                PasteModeRow(
+                    title: L10n("general.paste.activeApp"),
+                    description: L10n("general.paste.activeApp.desc"),
+                    isSelected: appState.pasteMode == .activeApp
+                ) {
+                    state.pasteMode = .activeApp
+                }
+
+                PasteModeRow(
+                    title: L10n("general.paste.clipboard"),
+                    description: L10n("general.paste.clipboard.desc"),
+                    isSelected: appState.pasteMode == .clipboard
+                ) {
+                    state.pasteMode = .clipboard
+                }
+
+                Toggle(L10n("general.paste.plainText"), isOn: $state.alwaysPastePlainText)
+            } header: {
+                Label(L10n("general.paste.header"), systemImage: "doc.on.clipboard")
             }
 
             // MARK: - Панель
             Section {
-                Picker("Позиция панели", selection: $state.panelPosition) {
-                    Text("Снизу").tag(PanelPosition.bottom)
-                    Text("Сверху").tag(PanelPosition.top)
+                Picker(L10n("general.panel.position"), selection: $state.panelPosition) {
+                    Text(L10n("general.panel.bottom")).tag(PanelPosition.bottom)
+                    Text(L10n("general.panel.top")).tag(PanelPosition.top)
                 }
                 .pickerStyle(.segmented)
             } header: {
-                Label("Панель", systemImage: "macwindow")
+                Label(L10n("general.panel.header"), systemImage: "macwindow")
             }
 
             // MARK: - Система
             Section {
-                Toggle("Запуск при старте системы", isOn: $state.launchAtLogin)
-                Toggle("Звук при копировании", isOn: $state.playCopySound)
+                Picker(L10n("general.language.picker"), selection: $state.appLanguage) {
+                    ForEach(AppLanguage.allCases) { lang in
+                        Text(lang.displayName).tag(lang)
+                    }
+                }
+
+                Toggle(L10n("general.system.launchAtLogin"), isOn: $state.launchAtLogin)
+
+                Toggle(L10n("general.system.playCopySound"), isOn: $state.playCopySound)
+
+                if appState.playCopySound {
+                    HStack {
+                        Picker(L10n("general.system.copySound"), selection: $state.copySound) {
+                            ForEach(CopySound.allCases) { sound in
+                                Text(sound.displayName).tag(sound)
+                            }
+                        }
+
+                        Button {
+                            appState.copySound.play()
+                        } label: {
+                            Image(systemName: "speaker.wave.2")
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                }
             } header: {
-                Label("Система", systemImage: "gearshape.2")
+                Label(L10n("general.system.header"), systemImage: "gearshape.2")
             }
 
             // MARK: - Доски
             Section {
-                Button("Экспортировать все доски") {
+                Button(L10n("general.boards.exportAll")) {
                     exportAllBoards()
                 }
                 .disabled(appState.pinboardStore.pinboards.isEmpty)
 
-                Button("Импортировать доски...") {
+                Button(L10n("general.boards.import")) {
                     importAllBoards()
                 }
+
+                Button(L10n("general.boards.deleteAll")) {
+                    confirmDeleteBoards = true
+                }
+                .foregroundStyle(.red)
+                .disabled(appState.pinboardStore.pinboards.isEmpty)
             } header: {
-                Label("Доски", systemImage: "rectangle.on.rectangle.angled")
+                Label(L10n("general.boards.header"), systemImage: "rectangle.on.rectangle.angled")
             }
         }
         .formStyle(.grouped)
-        .confirmationDialog("Стереть историю?", isPresented: $confirmClearHistory, titleVisibility: .visible) {
-            Button("Стереть", role: .destructive) {
+        .confirmationDialog(L10n("general.retention.confirm.title"), isPresented: $confirmClearHistory, titleVisibility: .visible) {
+            Button(L10n("general.retention.confirm.action"), role: .destructive) {
                 appState.clearHistory()
             }
         } message: {
-            Text("Вся история копирования будет удалена.")
+            Text(L10n("general.retention.confirm.message"))
         }
-        .alert("Ошибка", isPresented: $showExportImportError) {
-            Button("OK") {}
+        .confirmationDialog(L10n("general.boards.confirm.title"), isPresented: $confirmDeleteBoards, titleVisibility: .visible) {
+            Button(L10n("general.boards.confirm.action"), role: .destructive) {
+                appState.deleteAllBoards()
+            }
+        } message: {
+            Text(L10n("general.boards.confirm.message"))
+        }
+        .alert(L10n("common.error"), isPresented: $showExportImportError) {
+            Button(L10n("common.ok")) {}
         } message: {
             Text(exportImportError ?? "")
         }
-        .alert("Готово", isPresented: $showSuccess) {
-            Button("OK") {}
+        .alert(L10n("common.done"), isPresented: $showSuccess) {
+            Button(L10n("common.ok")) {}
         } message: {
             Text(successMessage ?? "")
         }
@@ -110,7 +179,7 @@ struct GeneralSettingsView: View {
                     database: appState.database,
                     imageStorage: ImageStorage.shared
                 )
-                successMessage = "Экспортировано в \(url.path)"
+                successMessage = L10n("common.export.success", url.path)
                 showSuccess = true
             } catch {
                 exportImportError = error.localizedDescription
@@ -129,7 +198,7 @@ struct GeneralSettingsView: View {
                 )
                 if !imported.isEmpty {
                     let names = imported.map { "«\($0.name)»" }.joined(separator: ", ")
-                    successMessage = "Импортировано досок: \(imported.count) — \(names)"
+                    successMessage = L10n("common.import.success", imported.count, names)
                     showSuccess = true
                 }
             } catch {
@@ -137,5 +206,38 @@ struct GeneralSettingsView: View {
                 showExportImportError = true
             }
         }
+    }
+}
+
+// MARK: - Paste Mode Row
+
+private struct PasteModeRow: View {
+    let title: String
+    let description: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: isSelected ? "circle.inset.filled" : "circle")
+                    .foregroundStyle(isSelected ? .blue : .secondary)
+                    .font(.title3)
+                    .padding(.top, 1)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                    Text(description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }

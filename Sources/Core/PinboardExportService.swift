@@ -17,17 +17,17 @@ enum PinboardExportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noItemsToExport:
-            return "Доска пуста, нечего экспортировать"
+            return L10n("error.export.empty")
         case .zipCreationFailed(let msg):
-            return "Ошибка создания архива: \(msg)"
+            return L10n("error.export.zipCreate", msg)
         case .zipExtractionFailed(let msg):
-            return "Ошибка распаковки архива: \(msg)"
+            return L10n("error.export.zipExtract", msg)
         case .invalidArchive:
-            return "Некорректный файл .bufr"
+            return L10n("error.export.invalid")
         case .unsupportedVersion(let v):
-            return "Неподдерживаемая версия формата: \(v)"
+            return L10n("error.export.version", v)
         case .jsonDecodingFailed(let e):
-            return "Ошибка чтения данных: \(e.localizedDescription)"
+            return L10n("error.export.decode", e.localizedDescription)
         }
     }
 }
@@ -156,7 +156,7 @@ enum PinboardExportService {
     ) async throws -> [Pinboard] {
         // 1. Show NSOpenPanel
         let panel = NSOpenPanel()
-        panel.title = "Импортировать доски"
+        panel.title = L10n("error.export.importAllTitle")
         if let bufrType = UTType(filenameExtension: "bufr") {
             panel.allowedContentTypes = [bufrType]
         }
@@ -302,7 +302,7 @@ enum PinboardExportService {
     ) async throws -> Pinboard? {
         // 1. Show NSOpenPanel
         let panel = NSOpenPanel()
-        panel.title = "Импортировать доску"
+        panel.title = L10n("error.export.importTitle")
         if let bufrType = UTType(filenameExtension: "bufr") {
             panel.allowedContentTypes = [bufrType]
         }

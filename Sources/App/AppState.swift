@@ -47,6 +47,19 @@ final class AppState {
         }
     }
 
+    var pasteMode: PasteMode {
+        didSet { UserDefaults.standard.set(pasteMode.rawValue, forKey: "pasteMode") }
+    }
+    var alwaysPastePlainText: Bool {
+        didSet { UserDefaults.standard.set(alwaysPastePlainText, forKey: "alwaysPastePlainText") }
+    }
+    var copySound: CopySound {
+        didSet { UserDefaults.standard.set(copySound.rawValue, forKey: "copySound") }
+    }
+    var appLanguage: AppLanguage {
+        didSet { UserDefaults.standard.set(appLanguage.rawValue, forKey: "appLanguage") }
+    }
+
     // MARK: - Onboarding
     var hasCompletedOnboarding: Bool {
         didSet { UserDefaults.standard.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding") }
@@ -72,6 +85,10 @@ final class AppState {
         self.playCopySound = defaults.bool(forKey: "playCopySound")
         self.panelPosition = PanelPosition(rawValue: defaults.string(forKey: "panelPosition") ?? "") ?? .bottom
         self.launchAtLogin = defaults.bool(forKey: "launchAtLogin")
+        self.pasteMode = PasteMode(rawValue: defaults.string(forKey: "pasteMode") ?? "") ?? .activeApp
+        self.alwaysPastePlainText = defaults.bool(forKey: "alwaysPastePlainText")
+        self.copySound = CopySound(rawValue: defaults.string(forKey: "copySound") ?? "") ?? .tink
+        self.appLanguage = AppLanguage(rawValue: defaults.string(forKey: "appLanguage") ?? "") ?? .system
         self.hasCompletedOnboarding = defaults.bool(forKey: "hasCompletedOnboarding")
 
         // Initialize services
@@ -152,8 +169,15 @@ final class AppState {
     func pasteItem(_ item: ClipItem, asPlainText: Bool = false) {
         hidePanel()
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-            self?.clipboardPaster.paste(item, asPlainText: asPlainText)
+        let plainText = asPlainText || alwaysPastePlainText
+
+        switch pasteMode {
+        case .activeApp:
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+                self?.clipboardPaster.paste(item, asPlainText: plainText)
+            }
+        case .clipboard:
+            clipboardPaster.copyToClipboard(item, asPlainText: plainText)
         }
     }
 

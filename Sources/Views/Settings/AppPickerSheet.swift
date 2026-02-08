@@ -12,10 +12,10 @@ struct AppPickerSheet: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Выберите приложение")
+                Text(L10n("appPicker.title"))
                     .font(.headline)
                 Spacer()
-                Button("Закрыть") {
+                Button(L10n("common.close")) {
                     dismiss()
                 }
             }
@@ -25,7 +25,7 @@ struct AppPickerSheet: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
-                TextField("Поиск...", text: $searchText)
+                TextField(L10n("search.placeholder"), text: $searchText)
                     .textFieldStyle(.plain)
             }
             .padding(.horizontal, 12)

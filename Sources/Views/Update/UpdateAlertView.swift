@@ -10,17 +10,17 @@ struct UpdateAlertView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(.blue)
 
-            Text("Доступно обновление")
+            Text(L10n("updateAlert.title"))
                 .font(.title2)
                 .fontWeight(.bold)
 
             if case .available(let version) = appState.updater.status {
-                Text("Новая версия: \(version)")
+                Text(L10n("updateAlert.newVersion", version))
                     .font(.headline)
                     .foregroundStyle(.secondary)
 
                 if let current = AppVersion.current {
-                    Text("Текущая версия: \(current.description)")
+                    Text(L10n("updateAlert.currentVersion", current.description))
                         .font(.subheadline)
                         .foregroundStyle(.tertiary)
                 }
@@ -28,7 +28,7 @@ struct UpdateAlertView: View {
 
             // Release notes
             if let release = appState.updater.latestRelease, !release.body.isEmpty {
-                GroupBox("Что нового") {
+                GroupBox(L10n("updateAlert.whatsNew")) {
                     ScrollView {
                         Text(markdownBody(release.body))
                             .font(.callout)
@@ -42,7 +42,7 @@ struct UpdateAlertView: View {
             if case .downloading(let progress) = appState.updater.status {
                 VStack(spacing: 4) {
                     ProgressView(value: progress)
-                    Text("Загрузка... \(Int(progress * 100))%")
+                    Text(L10n("updateAlert.downloading", Int(progress * 100)))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -53,7 +53,7 @@ struct UpdateAlertView: View {
                 VStack(spacing: 4) {
                     ProgressView()
                         .controlSize(.small)
-                    Text("Установка...")
+                    Text(L10n("updateAlert.installing"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -69,7 +69,7 @@ struct UpdateAlertView: View {
 
             // Action buttons
             HStack {
-                Button("Позже") {
+                Button(L10n("updateAlert.later")) {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
@@ -107,27 +107,27 @@ struct UpdateAlertView: View {
     private var actionButtons: some View {
         switch appState.updater.status {
         case .available:
-            Button("Загрузить и установить") {
+            Button(L10n("updateAlert.download")) {
                 Task { await appState.updater.downloadUpdate() }
             }
             .buttonStyle(.borderedProminent)
             .keyboardShortcut(.defaultAction)
 
         case .downloading:
-            Button("Отмена") {
+            Button(L10n("common.cancel")) {
                 appState.updater.cancelDownload()
                 dismiss()
             }
 
         case .readyToInstall:
-            Button("Установить и перезапустить") {
+            Button(L10n("updateAlert.installRestart")) {
                 appState.updater.installAndRelaunch()
             }
             .buttonStyle(.borderedProminent)
             .keyboardShortcut(.defaultAction)
 
         case .error:
-            Button("Повторить") {
+            Button(L10n("updateAlert.retry")) {
                 Task { await appState.updater.checkForUpdates() }
             }
 

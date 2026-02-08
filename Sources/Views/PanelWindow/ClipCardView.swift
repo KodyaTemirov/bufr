@@ -9,6 +9,7 @@ struct ClipCardView: View {
     let item: ClipItem
     let isSelected: Bool
     var boardColor: Color? = nil
+    var shortcutIndex: Int? = nil
 
     var onRename: ((ClipItem) -> Void)? = nil
 
@@ -56,6 +57,17 @@ struct ClipCardView: View {
                     lineWidth: (isSelected || isHovered) ? 2 : 0
                 )
         )
+        .overlay(alignment: .bottomTrailing) {
+            if let index = shortcutIndex {
+                Text("⌘\(index)")
+                    .font(.system(.caption2, design: .rounded, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(.ultraThinMaterial, in: .capsule)
+                    .padding(8)
+            }
+        }
         .shadow(
             color: isHovered ? .black.opacity(0.15) : .black.opacity(0.06),
             radius: isHovered ? 12 : 4,
@@ -67,7 +79,7 @@ struct ClipCardView: View {
         .draggable(dragPayload)
         .contextMenu {
             if !appState.pinboardStore.pinboards.isEmpty {
-                Menu("Добавить на доску") {
+                Menu(L10n("card.addToBoard")) {
                     ForEach(appState.pinboardStore.pinboards) { board in
                         Button {
                             do {
@@ -83,17 +95,17 @@ struct ClipCardView: View {
                 }
             }
 
-            Button("Копировать") {
+            Button(L10n("card.copy")) {
                 appState.clipboardPaster.copyToClipboard(item)
             }
 
-            Button("Переименовать") {
+            Button(L10n("card.rename")) {
                 onRename?(item)
             }
 
             Divider()
 
-            Button("Удалить", role: .destructive) {
+            Button(L10n("common.delete"), role: .destructive) {
                 appState.deleteItem(item)
             }
         }
@@ -210,14 +222,14 @@ struct ClipCardView: View {
         switch item.contentType {
         case .text, .richText:
             guard let text = item.textContent else { return nil }
-            return "\(text.count) символов"
+            return L10n("card.characters", text.count)
         case .image:
             return nil
         case .url:
             return item.textContent
         case .file:
             let count = item.filePathsArray.count
-            return count == 1 ? "1 файл" : "\(count) файлов"
+            return count == 1 ? L10n("card.file.one") : L10n("card.files", count)
         case .color:
             return item.textContent
         }
@@ -227,10 +239,10 @@ struct ClipCardView: View {
 
     private var relativeTime: String {
         let interval = -item.createdAt.timeIntervalSinceNow
-        if interval < 60 { return "только что" }
-        else if interval < 3600 { return "\(Int(interval / 60)) мин назад" }
-        else if interval < 86400 { return "\(Int(interval / 3600)) ч назад" }
-        else { return "\(Int(interval / 86400)) д назад" }
+        if interval < 60 { return L10n("card.time.now") }
+        else if interval < 3600 { return L10n("card.time.minutes", Int(interval / 60)) }
+        else if interval < 86400 { return L10n("card.time.hours", Int(interval / 3600)) }
+        else { return L10n("card.time.days", Int(interval / 86400)) }
     }
 
     private func boardLabelColor(_ board: Pinboard) -> Color {

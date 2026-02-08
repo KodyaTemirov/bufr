@@ -58,6 +58,16 @@ struct ClipPanelView: View {
                     pasteSelected(plainText: false)
                     return .handled
                 }
+                // ⌘1-⌘9: paste card by number
+                if keyPress.modifiers.contains(.command),
+                   let digit = keyPress.key.character.wholeNumberValue,
+                   digit >= 1, digit <= 9 {
+                    let index = digit - 1
+                    if let item = displayedItems[safe: index] {
+                        appState.pasteItem(item)
+                    }
+                    return .handled
+                }
                 return .ignored
             }
             .onKeyPress(.escape) {
@@ -116,16 +126,16 @@ struct ClipPanelView: View {
             set: { if !$0 { itemToRename = nil } }
         )) {
             VStack(spacing: 16) {
-                Text("Переименовать")
+                Text(L10n("panel.rename"))
                     .font(.headline)
 
-                TextField("Название", text: $renamingTitle)
+                TextField(L10n("panel.name"), text: $renamingTitle)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit { saveRename() }
 
                 HStack {
                     if itemToRename?.customTitle != nil {
-                        Button("Сбросить") {
+                        Button(L10n("panel.resetName")) {
                             renamingTitle = ""
                             saveRename()
                         }
@@ -134,11 +144,11 @@ struct ClipPanelView: View {
 
                     Spacer()
 
-                    Button("Отмена") {
+                    Button(L10n("common.cancel")) {
                         itemToRename = nil
                     }
 
-                    Button("Сохранить") {
+                    Button(L10n("common.save")) {
                         saveRename()
                     }
                     .buttonStyle(.borderedProminent)
@@ -148,14 +158,14 @@ struct ClipPanelView: View {
             .frame(width: 300)
         }
         .confirmationDialog(
-            "Удалить доску «\(boardToDelete?.name ?? "")»?",
+            L10n("panel.confirmDeleteBoard", boardToDelete?.name ?? ""),
             isPresented: .init(
                 get: { boardToDelete != nil },
                 set: { if !$0 { boardToDelete = nil } }
             ),
             titleVisibility: .visible
         ) {
-            Button("Удалить", role: .destructive) {
+            Button(L10n("common.delete"), role: .destructive) {
                 if let board = boardToDelete {
                     try? appState.pinboardStore.delete(board)
                     if selectedBoardId == board.id {
@@ -168,13 +178,13 @@ struct ClipPanelView: View {
         .task {
             try? appState.pinboardStore.fetchPinboards()
         }
-        .alert("Ошибка", isPresented: $showExportImportError) {
-            Button("OK") {}
+        .alert(L10n("common.error"), isPresented: $showExportImportError) {
+            Button(L10n("common.ok")) {}
         } message: {
             Text(exportImportError ?? "")
         }
-        .alert("Готово", isPresented: $showImportSuccess) {
-            Button("OK") {}
+        .alert(L10n("common.done"), isPresented: $showImportSuccess) {
+            Button(L10n("common.ok")) {}
         } message: {
             Text(importSuccessMessage ?? "")
         }
@@ -199,7 +209,7 @@ struct ClipPanelView: View {
                 HStack(spacing: 4) {
                     // Clipboard history tab (always first)
                     BoardTabButton(
-                        label: "Буфер обмена",
+                        label: L10n("panel.clipboard"),
                         systemImage: "clipboard",
                         isSelected: selectedBoardId == nil,
                         action: { selectClipboard() }
@@ -214,14 +224,14 @@ struct ClipPanelView: View {
                             action: { selectBoard(board.id) }
                         )
                         .contextMenu {
-                            Button("Редактировать") {
+                            Button(L10n("panel.edit")) {
                                 boardToEdit = board
                             }
-                            Button("Экспортировать доску...") {
+                            Button(L10n("panel.exportBoard")) {
                                 exportBoard(board)
                             }
                             Divider()
-                            Button("Удалить", role: .destructive) {
+                            Button(L10n("common.delete"), role: .destructive) {
                                 boardToDelete = board
                             }
                         }
@@ -313,11 +323,12 @@ struct ClipPanelView: View {
 
     private var footerBar: some View {
         VStack(alignment: .leading, spacing: 10) {
-            keyHint("←→", label: "навигация")
-            keyHint("⏎", label: "вставить")
-            keyHint("⌥⏎", label: "plain text")
-            keyHint("⎵", label: "превью")
-            keyHint("⎋", label: "закрыть")
+            keyHint("←→", label: L10n("panel.hint.navigation"))
+            keyHint("⏎", label: L10n("panel.hint.paste"))
+            keyHint("⌥⏎", label: L10n("panel.hint.plainText"))
+            keyHint("⌘1-9", label: L10n("panel.hint.quickPaste"))
+            keyHint("⎵", label: L10n("panel.hint.preview"))
+            keyHint("⎋", label: L10n("panel.hint.close"))
         }
     }
 
@@ -397,7 +408,7 @@ struct ClipPanelView: View {
                     database: appState.database,
                     imageStorage: ImageStorage.shared
                 )
-                importSuccessMessage = "Экспортировано в \(url.path)"
+                importSuccessMessage = L10n("common.export.success", url.path)
                 showImportSuccess = true
             } catch {
                 exportImportError = error.localizedDescription
@@ -413,10 +424,10 @@ struct ClipPanelView: View {
             Image(systemName: selectedBoardId != nil ? "tray" : (searchQuery.isEmpty ? "clipboard" : "magnifyingglass"))
                 .font(.system(size: 36))
                 .foregroundStyle(.tertiary)
-            Text(selectedBoardId != nil ? "Доска пуста" : (searchQuery.isEmpty ? "История пуста" : "Ничего не найдено"))
+            Text(selectedBoardId != nil ? L10n("panel.empty.board") : (searchQuery.isEmpty ? L10n("panel.empty.history") : L10n("panel.empty.noResults")))
                 .font(.system(.title3, design: .rounded, weight: .medium))
                 .foregroundStyle(.secondary)
-            Text(selectedBoardId != nil ? "Добавьте элементы через контекстное меню" : (searchQuery.isEmpty ? "Скопируйте что-нибудь для начала" : "Попробуйте изменить запрос"))
+            Text(selectedBoardId != nil ? L10n("panel.empty.board.hint") : (searchQuery.isEmpty ? L10n("panel.empty.history.hint") : L10n("panel.empty.noResults.hint")))
                 .font(.system(.subheadline, design: .rounded))
                 .foregroundStyle(.tertiary)
         }

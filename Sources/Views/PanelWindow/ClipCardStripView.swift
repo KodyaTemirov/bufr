@@ -16,6 +16,7 @@ struct ClipCardStripView: View {
                             item: item,
                             isSelected: index == selectedIndex,
                             boardColor: boardColor,
+                            shortcutIndex: index < 9 ? index + 1 : nil,
                             onRename: onRename
                         )
                         .id(item.id)

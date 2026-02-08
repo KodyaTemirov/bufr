@@ -8,7 +8,7 @@ struct ExclusionsSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Text("Bufr не будет сохранять данные из буфера обмена этих приложений.")
+                Text(L10n("exclusions.description"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -17,7 +17,7 @@ struct ExclusionsSettingsView: View {
                         Image(systemName: "app.dashed")
                             .font(.system(size: 24))
                             .foregroundStyle(.tertiary)
-                        Text("Нет исключений")
+                        Text(L10n("exclusions.empty"))
                             .foregroundStyle(.tertiary)
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -33,19 +33,19 @@ struct ExclusionsSettingsView: View {
                     Button {
                         showAppPicker = true
                     } label: {
-                        Label("Добавить", systemImage: "plus")
+                        Label(L10n("exclusions.add"), systemImage: "plus")
                     }
 
                     if !selection.isEmpty {
                         Button(role: .destructive) {
                             removeSelected()
                         } label: {
-                            Label("Удалить", systemImage: "minus")
+                            Label(L10n("exclusions.remove"), systemImage: "minus")
                         }
                     }
                 }
             } header: {
-                Label("Исключённые приложения", systemImage: "eye.slash")
+                Label(L10n("exclusions.header"), systemImage: "eye.slash")
             }
         }
         .formStyle(.grouped)
