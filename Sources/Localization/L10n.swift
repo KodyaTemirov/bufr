@@ -7,15 +7,32 @@ private func resolvedLanguageCode() -> String {
     return lang.code
 }
 
+/// Find the bundle containing localization resources.
+/// SPM's Bundle.module looks in Bufr.app/ root which breaks codesign,
+/// so we search in Contents/Resources/ (where the build script places Bufr_Bufr.bundle).
+private func localizationBundle() -> Bundle {
+    let resourcesURL = Bundle.main.resourceURL ?? Bundle.main.bundleURL
+    let candidates = [
+        resourcesURL.appendingPathComponent("Bufr_Bufr.bundle"),
+        Bundle.main.bundleURL.appendingPathComponent("Bufr_Bufr.bundle"),
+    ]
+    for url in candidates {
+        if let b = Bundle(url: url) { return b }
+    }
+    return Bundle.main
+}
+
+private let _localizationBundle: Bundle = localizationBundle()
+
 /// Localization helper. Loads strings from the correct .lproj bundle
 /// based on the current app language setting.
 func L10n(_ key: String) -> String {
     let code = resolvedLanguageCode()
 
-    guard let bundlePath = Bundle.module.path(forResource: code, ofType: "lproj"),
-          let bundle = Bundle(path: bundlePath)
+    guard let lproj = _localizationBundle.url(forResource: code, withExtension: "lproj"),
+          let bundle = Bundle(url: lproj)
     else {
-        return Bundle.module.localizedString(forKey: key, value: key, table: nil)
+        return _localizationBundle.localizedString(forKey: key, value: key, table: nil)
     }
 
     return bundle.localizedString(forKey: key, value: key, table: nil)
