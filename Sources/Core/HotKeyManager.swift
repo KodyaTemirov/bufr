@@ -5,6 +5,7 @@ import HotKey
 final class HotKeyManager {
     private var hotKey: HotKey?
     var onTogglePanel: (() -> Void)?
+    var isRegistered: Bool { hotKey != nil }
 
     func register(key: Key = .v, modifiers: NSEvent.ModifierFlags = [.command, .shift]) {
         unregister()

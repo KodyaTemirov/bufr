@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ClipPanelView: View {
     @Environment(AppState.self) private var appState
-    @Environment(\.openSettings) private var openSettings
     @State private var selectedIndex: Int = 0
     @State private var searchQuery: String = ""
     @State private var searchResults: [ClipItem]?
@@ -48,11 +47,12 @@ struct ClipPanelView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: appState.panelPosition == .top ? .bottom : .top)
-            .background(Color(nsColor: .windowBackgroundColor))
             .onKeyPress(.space) {
                 guard !displayedItems.isEmpty else { return .ignored }
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    showQuickPreview.toggle()
+                if showQuickPreview {
+                    dismissPreview()
+                } else {
+                    showPreviewWindow()
                 }
                 return .handled
             }
@@ -61,6 +61,16 @@ struct ClipPanelView: View {
                 return .handled
             }
             .onKeyPress(.rightArrow) {
+                moveSelection(by: 1)
+                return .handled
+            }
+            .onKeyPress(.upArrow) {
+                guard isVertical else { return .ignored }
+                moveSelection(by: -1)
+                return .handled
+            }
+            .onKeyPress(.downArrow) {
+                guard isVertical else { return .ignored }
                 moveSelection(by: 1)
                 return .handled
             }
@@ -87,24 +97,15 @@ struct ClipPanelView: View {
             }
             .onKeyPress(.escape) {
                 if showQuickPreview {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        showQuickPreview = false
-                    }
+                    dismissPreview()
                     return .handled
                 }
                 appState.hidePanel()
                 return .handled
             }
 
-            // Quick Look overlay
-            if showQuickPreview, let item = displayedItems[safe: selectedIndex] {
-                QuickPreviewView(item: item) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        showQuickPreview = false
-                    }
-                }
-            }
         }
+        .background(Color(nsColor: .windowBackgroundColor))
         .onChange(of: searchQuery) {
             performSearch()
             selectedIndex = 0
@@ -113,6 +114,11 @@ struct ClipPanelView: View {
             guard appState.isPanelVisible else { return }
             performSearch()
             selectedIndex = 0
+        }
+        .onReceive(NotificationCenter.default.publisher(for: FloatingPanel.arrowKeyNotification)) { notification in
+            if let direction = notification.userInfo?["direction"] as? Int {
+                moveSelection(by: direction)
+            }
         }
         .sheet(isPresented: $showCreateSheet) {
             CreatePinboardSheet(
@@ -345,8 +351,7 @@ struct ClipPanelView: View {
         HStack(spacing: 8) {
             Button {
                 appState.hidePanel()
-                NSApplication.shared.activate()
-                openSettings()
+                appState.openSettingsWindow()
             } label: {
                 Image(systemName: "gearshape")
                     .font(.system(.subheadline, weight: .medium))
@@ -481,6 +486,21 @@ struct ClipPanelView: View {
         let newIndex = selectedIndex + offset
         guard newIndex >= 0, newIndex < displayedItems.count else { return }
         selectedIndex = newIndex
+    }
+
+    // MARK: - Preview Window
+
+    private func showPreviewWindow() {
+        guard let item = displayedItems[safe: selectedIndex] else { return }
+        showQuickPreview = true
+        PreviewWindowManager.shared.show(item: item, appState: appState) {
+            showQuickPreview = false
+        }
+    }
+
+    private func dismissPreview() {
+        showQuickPreview = false
+        PreviewWindowManager.shared.close()
     }
 
     private func pasteSelected(plainText: Bool) {

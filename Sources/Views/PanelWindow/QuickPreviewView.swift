@@ -67,7 +67,7 @@ struct QuickPreviewView: View {
 
                 // Content
                 previewContent
-                    .frame(maxWidth: 500, maxHeight: 350)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 // Meta info
                 HStack(spacing: 12) {
@@ -97,7 +97,7 @@ struct QuickPreviewView: View {
             .background(Color(nsColor: .windowBackgroundColor))
             .clipShape(.rect(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(nsColor: .separatorColor), lineWidth: 1))
-            .frame(maxWidth: 540, maxHeight: 420)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .transition(.opacity.combined(with: .scale(scale: 0.95)))
     }

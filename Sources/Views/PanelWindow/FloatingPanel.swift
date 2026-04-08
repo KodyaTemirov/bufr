@@ -6,7 +6,9 @@ final class FloatingPanel: NSPanel {
 
     nonisolated(unsafe) private var clickOutsideMonitor: Any?
     nonisolated(unsafe) private var scrollMonitor: Any?
+    nonisolated(unsafe) private var keyMonitor: Any?
     var remapScrollToHorizontal: Bool = true
+    static let arrowKeyNotification = Notification.Name("FloatingPanel.arrowKey")
 
     init(contentRect: NSRect) {
         super.init(
@@ -51,6 +53,7 @@ final class FloatingPanel: NSPanel {
     override func orderFrontRegardless() {
         super.orderFrontRegardless()
         startScrollMonitor()
+        startKeyMonitor()
         // Delay monitoring to avoid catching the click that opened the panel
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             guard let self, self.isVisible else { return }
@@ -61,6 +64,7 @@ final class FloatingPanel: NSPanel {
     override func orderOut(_ sender: Any?) {
         stopMonitoringClicks()
         stopScrollMonitor()
+        stopKeyMonitor()
         super.orderOut(sender)
     }
 
@@ -143,11 +147,41 @@ final class FloatingPanel: NSPanel {
         }
     }
 
+    // MARK: - Arrow keys: bypass TextField focus
+
+    private func startKeyMonitor() {
+        stopKeyMonitor()
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self, self.isVisible, event.window === self else { return event }
+
+            let arrows: [UInt16: Int] = [123: -1, 124: 1, 125: 1, 126: -1] // left, right, down, up
+            if let direction = arrows[event.keyCode] {
+                NotificationCenter.default.post(
+                    name: FloatingPanel.arrowKeyNotification,
+                    object: nil,
+                    userInfo: ["direction": direction]
+                )
+                return nil // consume event
+            }
+            return event
+        }
+    }
+
+    private func stopKeyMonitor() {
+        if let monitor = keyMonitor {
+            NSEvent.removeMonitor(monitor)
+            keyMonitor = nil
+        }
+    }
+
     deinit {
         if let monitor = clickOutsideMonitor {
             NSEvent.removeMonitor(monitor)
         }
         if let monitor = scrollMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
+        if let monitor = keyMonitor {
             NSEvent.removeMonitor(monitor)
         }
     }

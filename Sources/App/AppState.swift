@@ -1,4 +1,6 @@
+import AppKit
 import Foundation
+import HotKey
 import OSLog
 import ServiceManagement
 import SwiftUI
@@ -126,10 +128,17 @@ final class AppState {
         hotKeyManager.onTogglePanel = { [weak self] in
             self?.togglePanel()
         }
-        hotKeyManager.register()
+        if let code = UserDefaults.standard.object(forKey: "hotKeyCode") as? Int,
+           let key = Key(carbonKeyCode: UInt32(code)) {
+            let mods = NSEvent.ModifierFlags(rawValue: UInt(UserDefaults.standard.integer(forKey: "hotKeyModifiers")))
+            hotKeyManager.register(key: key, modifiers: mods)
+        } else {
+            hotKeyManager.register()
+        }
 
         // Panel close callback
         panelManager.onPanelClose = { [weak self] in
+            PreviewWindowManager.shared.close()
             self?.isPanelVisible = false
         }
 
@@ -160,8 +169,21 @@ final class AppState {
     }
 
     func hidePanel() {
+        PreviewWindowManager.shared.close()
         panelManager.hidePanel()
         isPanelVisible = false
+    }
+
+    func openSettingsWindow() {
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            for window in NSApp.windows where window.isVisible && !(window is NSPanel) {
+                window.collectionBehavior.insert(.moveToActiveSpace)
+                window.orderFrontRegardless()
+                window.makeKeyAndOrderFront(nil)
+            }
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 
     // MARK: - Paste
@@ -222,6 +244,13 @@ final class AppState {
     func resetHotKey() {
         hotKeyManager.register()
         hotKeyDisplayString = "⌘⇧V"
+        UserDefaults.standard.removeObject(forKey: "hotKeyCode")
+        UserDefaults.standard.removeObject(forKey: "hotKeyModifiers")
+    }
+
+    func saveHotKey(key: Key, modifiers: NSEvent.ModifierFlags) {
+        UserDefaults.standard.set(Int(key.carbonKeyCode), forKey: "hotKeyCode")
+        UserDefaults.standard.set(Int(modifiers.rawValue), forKey: "hotKeyModifiers")
     }
 
     // MARK: - Launch at Login

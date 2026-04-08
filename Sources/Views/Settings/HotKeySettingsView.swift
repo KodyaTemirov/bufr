@@ -1,8 +1,10 @@
 import SwiftUI
+import HotKey
 
 struct HotKeySettingsView: View {
     @Environment(AppState.self) private var appState
     @State private var isRecording = false
+    @State private var keyMonitor: Any?
 
     var body: some View {
         Form {
@@ -34,7 +36,11 @@ struct HotKeySettingsView: View {
 
                 HStack {
                     Button(isRecording ? L10n("common.cancel") : L10n("hotkeys.record")) {
-                        isRecording.toggle()
+                        if isRecording {
+                            stopRecording()
+                        } else {
+                            startRecording()
+                        }
                     }
 
                     if !isRecording {
@@ -56,5 +62,49 @@ struct HotKeySettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .onDisappear {
+            stopRecording()
+        }
+    }
+
+    private func startRecording() {
+        isRecording = true
+        appState.hotKeyManager.unregister()
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard event.modifierFlags.intersection([.command, .option, .control, .shift]) != [] else {
+                return event
+            }
+
+            if let key = Key(carbonKeyCode: UInt32(event.keyCode)) {
+                let mods = event.modifierFlags
+                appState.hotKeyManager.register(key: key, modifiers: mods)
+                appState.hotKeyDisplayString = displayString(key: key, modifiers: mods)
+                appState.saveHotKey(key: key, modifiers: mods)
+            }
+
+            stopRecording()
+            return nil
+        }
+    }
+
+    private func stopRecording() {
+        isRecording = false
+        if let monitor = keyMonitor {
+            NSEvent.removeMonitor(monitor)
+            keyMonitor = nil
+        }
+        if appState.hotKeyManager.isRegistered == false {
+            appState.resetHotKey()
+        }
+    }
+
+    private func displayString(key: Key, modifiers: NSEvent.ModifierFlags) -> String {
+        var parts: [String] = []
+        if modifiers.contains(.control) { parts.append("⌃") }
+        if modifiers.contains(.option) { parts.append("⌥") }
+        if modifiers.contains(.shift) { parts.append("⇧") }
+        if modifiers.contains(.command) { parts.append("⌘") }
+        parts.append(key.description.uppercased())
+        return parts.joined()
     }
 }
