@@ -86,6 +86,8 @@ struct GeneralSettingsView: View {
                 Picker(L10n("general.panel.position"), selection: $state.panelPosition) {
                     Text(L10n("general.panel.bottom")).tag(PanelPosition.bottom)
                     Text(L10n("general.panel.top")).tag(PanelPosition.top)
+                    Text(L10n("general.panel.left")).tag(PanelPosition.left)
+                    Text(L10n("general.panel.right")).tag(PanelPosition.right)
                 }
                 .pickerStyle(.segmented)
             } header: {

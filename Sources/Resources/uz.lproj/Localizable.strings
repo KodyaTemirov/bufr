@@ -34,6 +34,8 @@
 "general.panel.position" = "Panel joylashuvi";
 "general.panel.bottom" = "Pastda";
 "general.panel.top" = "Yuqorida";
+"general.panel.left" = "Chapda";
+"general.panel.right" = "O'ngda";
 
 /* General Settings - System */
 "general.system.header" = "Tizim";

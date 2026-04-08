@@ -19,21 +19,36 @@ struct ClipPanelView: View {
     @State private var importSuccessMessage: String?
     @State private var showImportSuccess = false
 
+    private var isVertical: Bool {
+        appState.panelPosition == .left || appState.panelPosition == .right
+    }
+
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                // Header: search + board tabs + actions
-                headerBar
-                    .padding(.horizontal, 18)
-                    .padding(.top, 18)
-                    .padding(.bottom, 8)
+                if appState.panelPosition != .top {
+                    headerBar
+                        .padding(.horizontal, isVertical ? 12 : 18)
+                        .padding(.top, isVertical ? 12 : 18)
+                        .padding(.bottom, 8)
+                }
 
-                // Content: cards
                 cardContent
-                    .frame(maxHeight: .infinity, alignment: .top)
+                    .frame(maxHeight: .infinity, alignment: appState.panelPosition == .top ? .bottom : .top)
+
+                if isVertical {
+                    verticalBoardTabs
+                }
+
+                if appState.panelPosition == .top {
+                    headerBar
+                        .padding(.horizontal, 18)
+                        .padding(.top, 8)
+                        .padding(.bottom, 18)
+                }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .glassEffect(.regular.tint(.white.opacity(0.3)), in: .rect(cornerRadius: 18))
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: appState.panelPosition == .top ? .bottom : .top)
+            .background(Color(nsColor: .windowBackgroundColor))
             .onKeyPress(.space) {
                 guard !displayedItems.isEmpty else { return .ignored }
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -95,6 +110,7 @@ struct ClipPanelView: View {
             selectedIndex = 0
         }
         .onChange(of: appState.clipItemStore.items) {
+            guard appState.isPanelVisible else { return }
             performSearch()
             selectedIndex = 0
         }
@@ -193,65 +209,140 @@ struct ClipPanelView: View {
     // MARK: - Header
 
     private var headerBar: some View {
+        Group {
+            if isVertical {
+                verticalHeader
+            } else {
+                horizontalHeader
+            }
+        }
+    }
+
+    private var verticalHeader: some View {
         HStack(spacing: 8) {
-            // Search
+            SearchBarView(query: $searchQuery)
+            actionButtons
+        }
+    }
+
+    private var verticalBoardTabs: some View {
+        HStack(spacing: 4) {
+            BoardTabButton(
+                label: L10n("panel.clipboard"),
+                systemImage: "clipboard",
+                isSelected: selectedBoardId == nil,
+                compact: true,
+                action: { selectClipboard() }
+            )
+
+            ForEach(appState.pinboardStore.pinboards) { board in
+                BoardTabButton(
+                    label: board.name,
+                    isSelected: selectedBoardId == board.id,
+                    color: boardColor(board),
+                    compact: true,
+                    action: { selectBoard(board.id) }
+                )
+                .contextMenu {
+                    Button(L10n("panel.edit")) {
+                        boardToEdit = board
+                    }
+                    Button(L10n("panel.exportBoard")) {
+                        exportBoard(board)
+                    }
+                    Divider()
+                    Button(L10n("common.delete"), role: .destructive) {
+                        boardToDelete = board
+                    }
+                }
+            }
+
+            Button {
+                showCreateSheet = true
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(.subheadline, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28, height: 28)
+                    .background(Color(nsColor: .controlBackgroundColor), in: .circle)
+                    .overlay(Circle().stroke(Color(nsColor: .separatorColor), lineWidth: 0.5))
+            }
+            .buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(Color(nsColor: .separatorColor))
+                .frame(height: 1)
+        }
+    }
+
+    private var horizontalHeader: some View {
+        HStack(spacing: 8) {
             SearchBarView(query: $searchQuery)
                 .frame(maxWidth: 240)
 
-            // Divider
             RoundedRectangle(cornerRadius: 0.5)
                 .fill(.quaternary)
                 .frame(width: 1, height: 22)
                 .padding(.horizontal, 4)
 
-            // Board tabs (scrollable)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 4) {
-                    // Clipboard history tab (always first)
-                    BoardTabButton(
-                        label: L10n("panel.clipboard"),
-                        systemImage: "clipboard",
-                        isSelected: selectedBoardId == nil,
-                        action: { selectClipboard() }
-                    )
-
-                    // Pinboard tabs
-                    ForEach(appState.pinboardStore.pinboards) { board in
-                        BoardTabButton(
-                            label: board.name,
-                            isSelected: selectedBoardId == board.id,
-                            color: boardColor(board),
-                            action: { selectBoard(board.id) }
-                        )
-                        .contextMenu {
-                            Button(L10n("panel.edit")) {
-                                boardToEdit = board
-                            }
-                            Button(L10n("panel.exportBoard")) {
-                                exportBoard(board)
-                            }
-                            Divider()
-                            Button(L10n("common.delete"), role: .destructive) {
-                                boardToDelete = board
-                            }
-                        }
-                    }
-
-                    // Add board button
-                    Button {
-                        showCreateSheet = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(.subheadline, weight: .medium))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 28, height: 28)
-                            .glassEffect(.regular, in: .circle)
-                    }
-                    .buttonStyle(.plain)
+                    boardTabs
                 }
             }
 
-            // Settings
+            actionButtons
+        }
+    }
+
+    @ViewBuilder
+    private var boardTabs: some View {
+        BoardTabButton(
+            label: L10n("panel.clipboard"),
+            systemImage: "clipboard",
+            isSelected: selectedBoardId == nil,
+            action: { selectClipboard() }
+        )
+
+        ForEach(appState.pinboardStore.pinboards) { board in
+            BoardTabButton(
+                label: board.name,
+                isSelected: selectedBoardId == board.id,
+                color: boardColor(board),
+                action: { selectBoard(board.id) }
+            )
+            .contextMenu {
+                Button(L10n("panel.edit")) {
+                    boardToEdit = board
+                }
+                Button(L10n("panel.exportBoard")) {
+                    exportBoard(board)
+                }
+                Divider()
+                Button(L10n("common.delete"), role: .destructive) {
+                    boardToDelete = board
+                }
+            }
+        }
+
+        Button {
+            showCreateSheet = true
+        } label: {
+            Image(systemName: "plus")
+                .font(.system(.subheadline, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 28, height: 28)
+                .background(Color(nsColor: .controlBackgroundColor), in: .circle)
+                .overlay(Circle().stroke(Color(nsColor: .separatorColor), lineWidth: 0.5))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var actionButtons: some View {
+        HStack(spacing: 8) {
             Button {
                 appState.hidePanel()
                 NSApplication.shared.activate()
@@ -261,11 +352,11 @@ struct ClipPanelView: View {
                     .font(.system(.subheadline, weight: .medium))
                     .foregroundStyle(.secondary)
                     .frame(width: 28, height: 28)
-                    .glassEffect(.regular, in: .circle)
+                    .background(Color(nsColor: .controlBackgroundColor), in: .circle)
+                    .overlay(Circle().stroke(Color(nsColor: .separatorColor), lineWidth: 0.5))
             }
             .buttonStyle(.plain)
 
-            // Keyboard hints button
             Button {
                 showKeyHints.toggle()
             } label: {
@@ -273,7 +364,8 @@ struct ClipPanelView: View {
                     .font(.system(.subheadline, weight: .medium))
                     .foregroundStyle(showKeyHints ? .primary : .secondary)
                     .frame(width: 28, height: 28)
-                    .glassEffect(.regular, in: .circle)
+                    .background(Color(nsColor: .controlBackgroundColor), in: .circle)
+                    .overlay(Circle().stroke(Color(nsColor: .separatorColor), lineWidth: 0.5))
             }
             .buttonStyle(.plain)
             .popover(isPresented: $showKeyHints, arrowEdge: .bottom) {
@@ -282,7 +374,6 @@ struct ClipPanelView: View {
                     .padding(.vertical, 12)
             }
 
-            // Close button
             Button {
                 appState.hidePanel()
             } label: {
@@ -290,7 +381,8 @@ struct ClipPanelView: View {
                     .font(.system(.subheadline, weight: .medium))
                     .foregroundStyle(.secondary)
                     .frame(width: 28, height: 28)
-                    .glassEffect(.regular, in: .circle)
+                    .background(Color(nsColor: .controlBackgroundColor), in: .circle)
+                    .overlay(Circle().stroke(Color(nsColor: .separatorColor), lineWidth: 0.5))
             }
             .buttonStyle(.plain)
         }
@@ -307,6 +399,7 @@ struct ClipPanelView: View {
                     items: displayedItems,
                     selectedIndex: $selectedIndex,
                     boardColor: selectedBoardColor,
+                    axis: isVertical ? .vertical : .horizontal,
                     onPaste: { item in
                         appState.pasteItem(item)
                     },
@@ -363,7 +456,9 @@ struct ClipPanelView: View {
     private func selectBoard(_ id: UUID) {
         selectedBoardId = id
         selectedIndex = 0
-        try? appState.pinboardStore.fetchClips(for: id)
+        Task.detached { @MainActor in
+            try? appState.pinboardStore.fetchClips(for: id)
+        }
     }
 
     private func boardColor(_ board: Pinboard) -> Color? {
@@ -457,40 +552,92 @@ private struct BoardTabButton: View {
     var systemImage: String? = nil
     let isSelected: Bool
     var color: Color? = nil
+    var compact: Bool = false
     let action: () -> Void
 
     @State private var isHovered = false
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
-                if let systemImage {
-                    Image(systemName: systemImage)
-                        .font(.system(.subheadline, weight: .medium))
-                } else if let color {
-                    Circle()
-                        .fill(color)
-                        .frame(width: 12, height: 12)
-                }
-                Text(label)
-                    .font(.system(.body, design: .rounded, weight: .regular))
-                    .lineLimit(1)
+            if compact {
+                compactContent
+            } else {
+                fullContent
             }
-            .foregroundStyle(isSelected ? Color.black : .primary)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 9)
-            .background {
-                if isSelected {
-                    Capsule().fill(Color.white.opacity(0.25))
-                } else {
-                    Capsule().fill(isHovered ? Color.white.opacity(0.12) : Color.white.opacity(0.06))
-                }
-            }
-            .clipShape(.capsule)
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
         .animation(.easeInOut(duration: 0.15), value: isSelected)
         .animation(.easeInOut(duration: 0.15), value: isHovered)
+        .help(compact ? label : "")
+    }
+
+    private var fullContent: some View {
+        HStack(spacing: 6) {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .font(.system(.subheadline, weight: .medium))
+            } else if let color {
+                Circle()
+                    .fill(color)
+                    .frame(width: 12, height: 12)
+            }
+            Text(label)
+                .font(.system(.body, design: .rounded, weight: .regular))
+                .lineLimit(1)
+        }
+        .foregroundStyle(isSelected ? Color.accentColor : .primary)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 9)
+        .background {
+            if isSelected {
+                Capsule().fill(Color.accentColor.opacity(0.12))
+            } else if isHovered {
+                Capsule().fill(Color(nsColor: .controlBackgroundColor))
+            } else {
+                Capsule().fill(Color.clear)
+            }
+        }
+        .clipShape(.capsule)
+    }
+
+    private var compactContent: some View {
+        Group {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .font(.system(.subheadline, weight: .medium))
+                    .foregroundStyle(isSelected ? Color.white : .primary)
+                    .frame(width: 32, height: 32)
+            } else {
+                Circle()
+                    .fill(color ?? .accentColor)
+                    .frame(width: 20, height: 20)
+                    .padding(6)
+            }
+        }
+        .background {
+            if isSelected {
+                Circle().fill(Color.accentColor)
+            } else if isHovered {
+                Circle().fill(Color(nsColor: .controlBackgroundColor))
+            } else {
+                Circle().fill(Color.clear)
+            }
+        }
+        .clipShape(.circle)
+        .overlay(alignment: .top) {
+            if isHovered && compact {
+                Text(label)
+                    .font(.system(.caption2, design: .rounded, weight: .medium))
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(nsColor: .windowBackgroundColor), in: .capsule)
+                    .overlay(Capsule().stroke(Color(nsColor: .separatorColor), lineWidth: 0.5))
+                    .offset(y: -30)
+                    .fixedSize()
+                    .transition(.opacity)
+            }
+        }
     }
 }

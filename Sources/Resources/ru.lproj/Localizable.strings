@@ -34,6 +34,8 @@
 "general.panel.position" = "Позиция панели";
 "general.panel.bottom" = "Снизу";
 "general.panel.top" = "Сверху";
+"general.panel.left" = "Слева";
+"general.panel.right" = "Справа";
 
 /* General Settings - System */
 "general.system.header" = "Система";

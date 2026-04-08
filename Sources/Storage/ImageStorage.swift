@@ -6,6 +6,11 @@ actor ImageStorage {
 
     private let imagesDir: URL
     private let thumbnailsDir: URL
+    private let thumbnailCache: NSCache<NSString, NSImage> = {
+        let cache = NSCache<NSString, NSImage>()
+        cache.countLimit = 100
+        return cache
+    }()
 
     private init() {
         let support = FileManager.default
@@ -27,8 +32,11 @@ actor ImageStorage {
         try data.write(to: fileURL)
         try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
 
-        // Generate thumbnail
-        generateThumbnail(from: data, id: id)
+        // Generate thumbnail in background — don't block save
+        let thumbDir = thumbnailsDir
+        Task.detached(priority: .utility) {
+            Self.generateThumbnailSync(from: data, id: id, thumbnailsDir: thumbDir)
+        }
 
         return filename
     }
@@ -54,9 +62,15 @@ actor ImageStorage {
     }
 
     func loadThumbnail(id: UUID) -> NSImage? {
+        let key = id.uuidString as NSString
+        if let cached = thumbnailCache.object(forKey: key) {
+            return cached
+        }
         let filename = "\(id.uuidString)_thumb.png"
         let fileURL = thumbnailsDir.appendingPathComponent(filename)
-        return NSImage(contentsOf: fileURL)
+        guard let image = NSImage(contentsOf: fileURL) else { return nil }
+        thumbnailCache.setObject(image, forKey: key)
+        return image
     }
 
     // MARK: - Delete
@@ -78,7 +92,7 @@ actor ImageStorage {
 
     // MARK: - Thumbnail
 
-    private func generateThumbnail(from data: Data, id: UUID) {
+    private nonisolated static func generateThumbnailSync(from data: Data, id: UUID, thumbnailsDir: URL) {
         let maxSize: CGFloat = 400
 
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return }

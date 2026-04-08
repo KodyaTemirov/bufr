@@ -94,9 +94,9 @@ struct QuickPreviewView: View {
                 }
             }
             .padding(20)
-            .background(.ultraThickMaterial)
+            .background(Color(nsColor: .windowBackgroundColor))
             .clipShape(.rect(cornerRadius: 14))
-            .shadow(radius: 20)
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(nsColor: .separatorColor), lineWidth: 1))
             .frame(maxWidth: 540, maxHeight: 420)
         }
         .transition(.opacity.combined(with: .scale(scale: 0.95)))
@@ -111,7 +111,7 @@ struct QuickPreviewView: View {
                     .font(.system(.body, design: .monospaced))
                     .scrollContentBackground(.hidden)
                     .padding(8)
-                    .background(Color(nsColor: .textBackgroundColor).opacity(0.5))
+                    .background(Color(nsColor: .textBackgroundColor))
                     .clipShape(.rect(cornerRadius: 8))
             } else {
                 ScrollView {
@@ -121,7 +121,7 @@ struct QuickPreviewView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(8)
                 }
-                .background(Color(nsColor: .textBackgroundColor).opacity(0.5))
+                .background(Color(nsColor: .textBackgroundColor))
                 .clipShape(.rect(cornerRadius: 8))
             }
 

@@ -33,7 +33,7 @@ final class ClipboardMonitor {
         isMonitoring = true
         lastChangeCount = pasteboard.changeCount
 
-        timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.checkForChanges()
             }
@@ -123,8 +123,8 @@ final class ClipboardMonitor {
         )
 
         do {
-            try clipItemStore.insert(item)
-            try clipItemStore.fetchItems()
+            let saved = try clipItemStore.insert(item)
+            clipItemStore.prependItem(saved)
             if playCopySound {
                 SoundManager.playCopySound()
             }

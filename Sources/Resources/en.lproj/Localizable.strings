@@ -34,6 +34,8 @@
 "general.panel.position" = "Panel Position";
 "general.panel.bottom" = "Bottom";
 "general.panel.top" = "Top";
+"general.panel.left" = "Left";
+"general.panel.right" = "Right";
 
 /* General Settings - System */
 "general.system.header" = "System";

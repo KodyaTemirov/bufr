@@ -4,6 +4,40 @@ import SwiftUI
 
 private let logger = Logger(subsystem: "com.bufr.app", category: "ClipCardView")
 
+// MARK: - App Icon & Color Cache
+
+@MainActor
+final class AppIconCache {
+    static let shared = AppIconCache()
+    private var icons: [String: NSImage] = [:]
+    private var colors: [String: Color] = [:]
+
+    func icon(for bundleId: String) -> NSImage? {
+        if let cached = icons[bundleId] { return cached }
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) else { return nil }
+        let icon = NSWorkspace.shared.icon(forFile: url.path)
+        icons[bundleId] = icon
+        return icon
+    }
+
+    func dominantColor(for bundleId: String) -> Color? {
+        if let cached = colors[bundleId] { return cached }
+        guard let icon = icon(for: bundleId),
+              let dominant = ColorExtractor.dominantColor(from: icon),
+              let hsb = dominant.usingColorSpace(.deviceRGB)
+        else { return nil }
+        let saturated = NSColor(
+            hue: hsb.hueComponent,
+            saturation: min(hsb.saturationComponent * 1.6, 1.0),
+            brightness: min(hsb.brightnessComponent * 0.85, 0.85),
+            alpha: 1.0
+        )
+        let color = Color(nsColor: saturated)
+        colors[bundleId] = color
+        return color
+    }
+}
+
 struct ClipCardView: View {
     @Environment(AppState.self) private var appState
     let item: ClipItem
@@ -15,7 +49,7 @@ struct ClipCardView: View {
 
     @State private var isHovered = false
     @State private var itemBoardColor: Color?
-    @State private var appIconColor: Color?
+
 
     private let cardRadius: CGFloat = 16
 
@@ -44,7 +78,7 @@ struct ClipCardView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .frame(width: 240, height: 200)
+        .frame(height: 200)
         .background(
             RoundedRectangle(cornerRadius: cardRadius, style: .continuous)
                 .fill(cardBackgroundColor)
@@ -53,8 +87,10 @@ struct ClipCardView: View {
         .overlay(
             RoundedRectangle(cornerRadius: cardRadius, style: .continuous)
                 .stroke(
-                    (isSelected || isHovered) ? (effectiveBoardColor?.opacity(0.7) ?? Color.accentColor.opacity(0.7)) : .clear,
-                    lineWidth: (isSelected || isHovered) ? 2 : 0
+                    (isSelected || isHovered)
+                        ? (effectiveBoardColor?.opacity(0.7) ?? Color.accentColor.opacity(0.7))
+                        : Color(nsColor: .separatorColor),
+                    lineWidth: (isSelected || isHovered) ? 2 : 1
                 )
         )
         .overlay(alignment: .bottomTrailing) {
@@ -64,15 +100,11 @@ struct ClipCardView: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
-                    .background(.ultraThinMaterial, in: .capsule)
+                    .background(Color(nsColor: .controlBackgroundColor), in: .capsule)
+                    .overlay(Capsule().stroke(Color(nsColor: .separatorColor), lineWidth: 0.5))
                     .padding(8)
             }
         }
-        .shadow(
-            color: isHovered ? .black.opacity(0.15) : .black.opacity(0.06),
-            radius: isHovered ? 12 : 4,
-            y: isHovered ? 4 : 1
-        )
         .animation(.easeInOut(duration: 0.2), value: isHovered)
         .animation(.spring(duration: 0.25, bounce: 0.2), value: isSelected)
         .onHover { isHovered = $0 }
@@ -109,22 +141,9 @@ struct ClipCardView: View {
                 appState.deleteItem(item)
             }
         }
-        .task {
+        .task(id: item.id) {
             lookupBoardColor()
-            if let icon = appIcon,
-               let dominant = ColorExtractor.dominantColor(from: icon),
-               let hsb = dominant.usingColorSpace(.deviceRGB) {
-                let saturated = NSColor(
-                    hue: hsb.hueComponent,
-                    saturation: min(hsb.saturationComponent * 1.6, 1.0),
-                    brightness: min(hsb.brightnessComponent * 0.85, 0.85),
-                    alpha: 1.0
-                )
-                appIconColor = Color(nsColor: saturated)
-            }
         }
-        .onChange(of: appState.pinboardStore.pinboards) { lookupBoardColor() }
-        .onChange(of: appState.pinboardStore.itemAssignmentVersion) { lookupBoardColor() }
     }
 
     // MARK: - Board Color
@@ -152,7 +171,7 @@ struct ClipCardView: View {
     }
 
     private var headerColor: Color {
-        effectiveBoardColor ?? appIconColor ?? Color(nsColor: .darkGray)
+        effectiveBoardColor ?? cachedAppIconColor ?? Color(nsColor: .darkGray)
     }
 
     // MARK: - Header Row
@@ -228,8 +247,16 @@ struct ClipCardView: View {
         case .url:
             return item.textContent
         case .file:
-            let count = item.filePathsArray.count
-            return count == 1 ? L10n("card.file.one") : L10n("card.files", count)
+            let paths = item.filePathsArray
+            if paths.count == 1, let path = paths.first {
+                let url = URL(fileURLWithPath: path)
+                if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+                   let size = attrs[.size] as? UInt64 {
+                    return ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file)
+                }
+                return L10n("card.file.one")
+            }
+            return L10n("card.files", paths.count)
         case .color:
             return item.textContent
         }
@@ -253,10 +280,13 @@ struct ClipCardView: View {
     }
 
     private var appIcon: NSImage? {
-        guard let bundleId = item.sourceAppId,
-              let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId)
-        else { return nil }
-        return NSWorkspace.shared.icon(forFile: url.path)
+        guard let bundleId = item.sourceAppId else { return nil }
+        return AppIconCache.shared.icon(for: bundleId)
+    }
+
+    private var cachedAppIconColor: Color? {
+        guard let bundleId = item.sourceAppId else { return nil }
+        return AppIconCache.shared.dominantColor(for: bundleId)
     }
 
     private var dragPayload: String {

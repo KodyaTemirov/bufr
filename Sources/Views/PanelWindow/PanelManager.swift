@@ -4,6 +4,8 @@ import SwiftUI
 enum PanelPosition: String, CaseIterable {
     case bottom
     case top
+    case left
+    case right
 }
 
 @MainActor
@@ -25,34 +27,55 @@ final class PanelManager {
         guard !isAnimating, let screen = activeScreen() else { return }
 
         currentPosition = position
-        let panelHeight: CGFloat = 280
-        let horizontalInset: CGFloat = 8
-
-        let originX = screen.visibleFrame.origin.x + horizontalInset
-        let panelWidth = screen.visibleFrame.width - horizontalInset * 2
-
-        // Short slide (30pt) + fade so animation stays within the current screen
         let slideOffset: CGFloat = 30
-        let targetY: CGFloat
+
+        let targetRect: NSRect
+        let startRect: NSRect
 
         switch position {
         case .bottom:
-            targetY = screen.frame.origin.y
+            let panelHeight: CGFloat = 280
+            let panelWidth = screen.visibleFrame.width
+            let originX = screen.visibleFrame.origin.x
+            let targetY = screen.frame.origin.y
+            targetRect = NSRect(x: originX, y: targetY, width: panelWidth, height: panelHeight)
+            startRect = targetRect.offsetBy(dx: 0, dy: -slideOffset)
+
         case .top:
-            targetY = screen.visibleFrame.origin.y + screen.visibleFrame.height - panelHeight - horizontalInset
+            let panelHeight: CGFloat = 280
+            let panelWidth = screen.visibleFrame.width
+            let originX = screen.visibleFrame.origin.x
+            let targetY = screen.visibleFrame.origin.y + screen.visibleFrame.height - panelHeight
+            targetRect = NSRect(x: originX, y: targetY, width: panelWidth, height: panelHeight)
+            startRect = targetRect.offsetBy(dx: 0, dy: slideOffset)
+
+        case .left:
+            let panelWidth: CGFloat = 280
+            let panelHeight = screen.frame.height
+            let targetX = screen.frame.origin.x
+            let originY = screen.frame.origin.y
+            targetRect = NSRect(x: targetX, y: originY, width: panelWidth, height: panelHeight)
+            startRect = targetRect.offsetBy(dx: -slideOffset, dy: 0)
+
+        case .right:
+            let panelWidth: CGFloat = 280
+            let panelHeight = screen.frame.height
+            let targetX = screen.frame.origin.x + screen.frame.width - panelWidth
+            let originY = screen.frame.origin.y
+            targetRect = NSRect(x: targetX, y: originY, width: panelWidth, height: panelHeight)
+            startRect = targetRect.offsetBy(dx: slideOffset, dy: 0)
         }
 
-        let startY = position == .bottom ? targetY - slideOffset : targetY + slideOffset
-        let startRect = NSRect(x: originX, y: startY, width: panelWidth, height: panelHeight)
-        let targetRect = NSRect(x: originX, y: targetY, width: panelWidth, height: panelHeight)
-
         let wrappedContent = AnyView(content)
+
+        let isHorizontal = position == .bottom || position == .top
 
         if let panel {
             // Reuse existing panel — update content and reset position
             if let hostingView {
                 hostingView.rootView = wrappedContent
             }
+            panel.remapScrollToHorizontal = isHorizontal
             panel.alphaValue = 0.0
             panel.setFrame(startRect, display: false)
             panel.orderFrontRegardless()
@@ -60,6 +83,7 @@ final class PanelManager {
         } else {
             // Create panel once
             let newPanel = FloatingPanel(contentRect: startRect)
+            newPanel.remapScrollToHorizontal = isHorizontal
             newPanel.onClickOutside = { [weak self] in
                 self?.hidePanel()
             }
@@ -94,16 +118,18 @@ final class PanelManager {
 
         // Short slide (30pt) + fade out, stays within the current screen
         let slideOffset: CGFloat = 30
-        let hideY = currentPosition == .bottom
-            ? panel.frame.origin.y - slideOffset
-            : panel.frame.origin.y + slideOffset
+        let targetRect: NSRect
 
-        let targetRect = NSRect(
-            x: panel.frame.origin.x,
-            y: hideY,
-            width: panel.frame.width,
-            height: panel.frame.height
-        )
+        switch currentPosition {
+        case .bottom:
+            targetRect = panel.frame.offsetBy(dx: 0, dy: -slideOffset)
+        case .top:
+            targetRect = panel.frame.offsetBy(dx: 0, dy: slideOffset)
+        case .left:
+            targetRect = panel.frame.offsetBy(dx: -slideOffset, dy: 0)
+        case .right:
+            targetRect = panel.frame.offsetBy(dx: slideOffset, dy: 0)
+        }
 
         isAnimating = true
         NSAnimationContext.runAnimationGroup({ context in

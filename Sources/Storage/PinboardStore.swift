@@ -34,7 +34,7 @@ final class PinboardStore {
         try database.dbQueue.write { db in
             try pinboard.insert(db)
         }
-        try fetchPinboards()
+        pinboards.append(pinboard)
         return pinboard
     }
 
@@ -42,14 +42,16 @@ final class PinboardStore {
         try database.dbQueue.write { db in
             try pinboard.update(db)
         }
-        try fetchPinboards()
+        if let idx = pinboards.firstIndex(where: { $0.id == pinboard.id }) {
+            pinboards[idx] = pinboard
+        }
     }
 
     func delete(_ pinboard: Pinboard) throws {
         _ = try database.dbQueue.write { db in
             try pinboard.delete(db)
         }
-        try fetchPinboards()
+        pinboards.removeAll { $0.id == pinboard.id }
     }
 
     // MARK: - Board Items

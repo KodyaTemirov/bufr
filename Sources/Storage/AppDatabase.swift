@@ -140,6 +140,14 @@ final class AppDatabase: Sendable {
             }
         }
 
+        migrator.registerMigration("v3_pinboardItemsIndexes") { db in
+            try db.create(
+                index: "idx_pinboard_items_clip_id",
+                on: "pinboard_items",
+                columns: ["clip_id"]
+            )
+        }
+
         return migrator
     }
 }

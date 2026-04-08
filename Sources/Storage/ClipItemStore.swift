@@ -150,38 +150,60 @@ final class ClipItemStore {
     // MARK: - Update
 
     func toggleFavorite(_ item: ClipItem) throws {
-        try database.dbQueue.write { db in
-            var updated = item
-            updated.isFavorite.toggle()
-            try updated.update(db)
+        let updated = try database.dbQueue.write { db -> ClipItem in
+            var u = item
+            u.isFavorite.toggle()
+            try u.update(db)
+            return u
         }
-        try fetchItems()
+        updateItemInPlace(updated)
     }
 
     func togglePinned(_ item: ClipItem) throws {
-        try database.dbQueue.write { db in
-            var updated = item
-            updated.isPinned.toggle()
-            try updated.update(db)
+        let updated = try database.dbQueue.write { db -> ClipItem in
+            var u = item
+            u.isPinned.toggle()
+            try u.update(db)
+            return u
         }
-        try fetchItems()
+        updateItemInPlace(updated)
     }
 
     func updateTextContent(_ item: ClipItem, newText: String) throws {
-        try database.dbQueue.write { db in
-            var updated = item
-            updated.textContent = newText
-            try updated.update(db)
+        let updated = try database.dbQueue.write { db -> ClipItem in
+            var u = item
+            u.textContent = newText
+            try u.update(db)
+            return u
         }
-        try fetchItems()
+        updateItemInPlace(updated)
     }
 
     func updateCustomTitle(_ item: ClipItem, newTitle: String?) throws {
-        try database.dbQueue.write { db in
-            var updated = item
-            updated.customTitle = (newTitle?.isEmpty == true) ? nil : newTitle
-            try updated.update(db)
+        let updated = try database.dbQueue.write { db -> ClipItem in
+            var u = item
+            u.customTitle = (newTitle?.isEmpty == true) ? nil : newTitle
+            try u.update(db)
+            return u
         }
-        try fetchItems()
+        updateItemInPlace(updated)
+    }
+
+    // MARK: - In-place update
+
+    private func updateItemInPlace(_ updated: ClipItem) {
+        if let idx = items.firstIndex(where: { $0.id == updated.id }) {
+            items[idx] = updated
+        }
+    }
+
+    func prependItem(_ item: ClipItem) {
+        // If duplicate (same id), remove old position first
+        items.removeAll { $0.id == item.id }
+        items.insert(item, at: 0)
+        // Keep within limit
+        if items.count > 200 {
+            items.removeLast(items.count - 200)
+        }
     }
 }

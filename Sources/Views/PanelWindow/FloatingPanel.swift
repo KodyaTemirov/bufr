@@ -5,6 +5,8 @@ final class FloatingPanel: NSPanel {
     var onClickOutside: (() -> Void)?
 
     nonisolated(unsafe) private var clickOutsideMonitor: Any?
+    nonisolated(unsafe) private var scrollMonitor: Any?
+    var remapScrollToHorizontal: Bool = true
 
     init(contentRect: NSRect) {
         super.init(
@@ -18,7 +20,7 @@ final class FloatingPanel: NSPanel {
         isMovableByWindowBackground = false
         isOpaque = false
         backgroundColor = .clear
-        hasShadow = false
+        hasShadow = true
         hidesOnDeactivate = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         isReleasedWhenClosed = false
@@ -28,12 +30,12 @@ final class FloatingPanel: NSPanel {
     }
 
     /// Clips the contentView layer to rounded corners so glass doesn't leak.
-    func applyCornerMask(radius: CGFloat = 18) {
+    func applyCornerMask(radius: CGFloat = 0) {
         guard let contentView else { return }
         contentView.wantsLayer = true
         contentView.layer?.cornerRadius = radius
         contentView.layer?.cornerCurve = .continuous
-        contentView.layer?.masksToBounds = true
+        contentView.layer?.masksToBounds = radius > 0
     }
 
     // Allow the panel to become key to receive keyboard events
@@ -45,39 +47,10 @@ final class FloatingPanel: NSPanel {
         onClickOutside?()
     }
 
-    // Convert vertical scroll to horizontal so the card strip scrolls with
-    // mouse wheel / trackpad vertical swipe.
-    override func scrollWheel(with event: NSEvent) {
-        // Only remap when vertical component dominates
-        guard abs(event.scrollingDeltaY) > abs(event.scrollingDeltaX) else {
-            super.scrollWheel(with: event)
-            return
-        }
-
-        // Build a copy with axes swapped
-        if let cg = event.cgEvent?.copy() {
-            let dy1 = cg.getDoubleValueField(.scrollWheelEventDeltaAxis1)
-            let dy2 = cg.getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
-            let dy3 = cg.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1)
-
-            cg.setDoubleValueField(.scrollWheelEventDeltaAxis1, value: 0)
-            cg.setDoubleValueField(.scrollWheelEventDeltaAxis2, value: -dy1)
-            cg.setDoubleValueField(.scrollWheelEventPointDeltaAxis1, value: 0)
-            cg.setDoubleValueField(.scrollWheelEventPointDeltaAxis2, value: -dy2)
-            cg.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1, value: 0)
-            cg.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2, value: -dy3)
-
-            if let remapped = NSEvent(cgEvent: cg) {
-                super.scrollWheel(with: remapped)
-                return
-            }
-        }
-
-        super.scrollWheel(with: event)
-    }
 
     override func orderFrontRegardless() {
         super.orderFrontRegardless()
+        startScrollMonitor()
         // Delay monitoring to avoid catching the click that opened the panel
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             guard let self, self.isVisible else { return }
@@ -87,6 +60,7 @@ final class FloatingPanel: NSPanel {
 
     override func orderOut(_ sender: Any?) {
         stopMonitoringClicks()
+        stopScrollMonitor()
         super.orderOut(sender)
     }
 
@@ -131,8 +105,49 @@ final class FloatingPanel: NSPanel {
         }
     }
 
+    // MARK: - Scroll: vertical → horizontal
+
+    private func startScrollMonitor() {
+        stopScrollMonitor()
+        scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+            guard let self, self.remapScrollToHorizontal, self.isVisible,
+                  let contentView = self.contentView,
+                  contentView.frame.contains(event.locationInWindow),
+                  event.window === self
+            else { return event }
+
+            guard abs(event.scrollingDeltaY) > abs(event.scrollingDeltaX),
+                  let cgEvent = event.cgEvent?.copy()
+            else { return event }
+
+            let dy1 = cgEvent.getDoubleValueField(.scrollWheelEventDeltaAxis1)
+            let dy2 = cgEvent.getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
+            let dy3 = cgEvent.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1)
+
+            cgEvent.setDoubleValueField(.scrollWheelEventDeltaAxis1, value: 0)
+            cgEvent.setDoubleValueField(.scrollWheelEventPointDeltaAxis1, value: 0)
+            cgEvent.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1, value: 0)
+
+            cgEvent.setDoubleValueField(.scrollWheelEventDeltaAxis2, value: dy1)
+            cgEvent.setDoubleValueField(.scrollWheelEventPointDeltaAxis2, value: dy2)
+            cgEvent.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2, value: dy3)
+
+            return NSEvent(cgEvent: cgEvent) ?? event
+        }
+    }
+
+    private func stopScrollMonitor() {
+        if let monitor = scrollMonitor {
+            NSEvent.removeMonitor(monitor)
+            scrollMonitor = nil
+        }
+    }
+
     deinit {
         if let monitor = clickOutsideMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
+        if let monitor = scrollMonitor {
             NSEvent.removeMonitor(monitor)
         }
     }

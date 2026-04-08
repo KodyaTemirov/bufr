@@ -29,7 +29,8 @@ struct SearchBarView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .glassEffect(.regular, in: .rect(cornerRadius: 10))
+        .background(Color(nsColor: .controlBackgroundColor), in: .rect(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(nsColor: .separatorColor), lineWidth: 1))
         .onAppear {
             isFocused = true
         }

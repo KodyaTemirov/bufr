@@ -4,13 +4,18 @@ struct ClipCardStripView: View {
     let items: [ClipItem]
     @Binding var selectedIndex: Int
     var boardColor: Color? = nil
+    var axis: Axis = .horizontal
     let onPaste: (ClipItem) -> Void
     var onRename: ((ClipItem) -> Void)? = nil
 
     var body: some View {
         ScrollViewReader { proxy in
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 10) {
+            ScrollView(axis == .horizontal ? .horizontal : .vertical, showsIndicators: false) {
+                let layout = axis == .horizontal
+                    ? AnyLayout(HStackLayout(spacing: 10))
+                    : AnyLayout(VStackLayout(spacing: 10))
+
+                layout {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                         ClipCardView(
                             item: item,
@@ -19,6 +24,7 @@ struct ClipCardStripView: View {
                             shortcutIndex: index < 9 ? index + 1 : nil,
                             onRename: onRename
                         )
+                        .cardWidth(axis: axis)
                         .id(item.id)
                         .onTapGesture {
                             selectedIndex = index
@@ -27,8 +33,9 @@ struct ClipCardStripView: View {
                     }
                 }
                 .scrollTargetLayout()
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .padding(.horizontal, axis == .horizontal ? 16 : 8)
+                .padding(.top, axis == .horizontal ? 8 : 0)
+                .padding(.bottom, axis == .horizontal ? 8 : 12)
             }
             .scrollTargetBehavior(.viewAligned)
             .onChange(of: selectedIndex) { _, newValue in
@@ -38,7 +45,31 @@ struct ClipCardStripView: View {
                 }
             }
         }
-        .frame(height: 220)
+        .frame(
+            maxWidth: axis == .horizontal ? .infinity : nil,
+            maxHeight: axis == .horizontal ? 220 : .infinity
+        )
+    }
+}
+
+
+// MARK: - Card width modifier
+
+private struct CardWidthModifier: ViewModifier {
+    let axis: Axis
+
+    func body(content: Content) -> some View {
+        if axis == .horizontal {
+            content.frame(width: 240)
+        } else {
+            content.frame(maxWidth: .infinity)
+        }
+    }
+}
+
+extension View {
+    func cardWidth(axis: Axis) -> some View {
+        modifier(CardWidthModifier(axis: axis))
     }
 }
 
