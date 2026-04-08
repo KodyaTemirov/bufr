@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ClipPanelView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.openSettings) private var openSettings
     @State private var selectedIndex: Int = 0
     @State private var searchQuery: String = ""
     @State private var searchResults: [ClipItem]?
@@ -351,7 +352,30 @@ struct ClipPanelView: View {
         HStack(spacing: 8) {
             Button {
                 appState.hidePanel()
-                appState.openSettingsWindow()
+                NSApp.setActivationPolicy(.regular)
+                NSApp.activate(ignoringOtherApps: true)
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(100))
+                    openSettings()
+                    for _ in 0..<20 {
+                        try? await Task.sleep(for: .milliseconds(50))
+                        if let win = NSApp.windows.first(where: { $0.isVisible && !($0 is NSPanel) }) {
+                            win.collectionBehavior.insert(.moveToActiveSpace)
+                            win.makeKeyAndOrderFront(nil)
+                            NotificationCenter.default.addObserver(
+                                forName: NSWindow.willCloseNotification,
+                                object: win, queue: .main
+                            ) { _ in
+                                Task { @MainActor in
+                                    if !NSApp.windows.contains(where: { $0.isVisible && !($0 is NSPanel) }) {
+                                        NSApp.setActivationPolicy(.accessory)
+                                    }
+                                }
+                            }
+                            break
+                        }
+                    }
+                }
             } label: {
                 Image(systemName: "gearshape")
                     .font(.system(.subheadline, weight: .medium))
