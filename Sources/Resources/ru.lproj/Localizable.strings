@@ -293,3 +293,15 @@
 "allInOne.window" = "Окно";
 "allInOne.fullscreen" = "Экран";
 "allInOne.capture" = "Снять";
+"menubar.pins" = "Закреплённые снимки";
+"menubar.pins.unlockAll" = "Разблокировать все";
+"screenshots.afterCapture.action" = "Показать";
+"screenshots.afterCapture.quickAccess" = "Миниатюру в углу (Quick Access)";
+"screenshots.afterCapture.pin" = "Закрепить на экране";
+"screenshots.afterCapture.nothing" = "Ничего";
+"screenshots.quickAccess.position" = "Угол";
+"screenshots.quickAccess.bottomLeft" = "Слева снизу";
+"screenshots.quickAccess.bottomRight" = "Справа снизу";
+"screenshots.quickAccess.autoClose" = "Закрывать автоматически";
+"screenshots.quickAccess.never" = "Никогда";
+"screenshots.quickAccess.seconds" = "Через %d с";

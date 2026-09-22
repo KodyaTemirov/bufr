@@ -19,6 +19,18 @@ struct MenuBarView: View {
                 AppState.shared.screenshots.openScreenshotsFolder()
             }
 
+            // Locked pins ignore the mouse; this is the way to unlock or close them
+            if appState.pins.hasPins {
+                Menu(L10n("menubar.pins")) {
+                    Button(L10n("menubar.pins.unlockAll")) {
+                        AppState.shared.pins.unlockAll()
+                    }
+                    Button(L10n("screenPin.closeAll")) {
+                        AppState.shared.pins.closeAll()
+                    }
+                }
+            }
+
             if appState.permissions.screenCapture != .granted {
                 Button(L10n("menubar.capture.permission")) {
                     PermissionGuideWindowController.shared.show()

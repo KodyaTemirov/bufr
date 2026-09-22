@@ -48,6 +48,25 @@ struct ScreenshotSettingsView: View {
             }
 
             Section {
+                Picker(L10n("screenshots.afterCapture.action"), selection: $settings.afterCapture) {
+                    ForEach(AfterCaptureAction.allCases, id: \.self) { action in
+                        Text(L10n("screenshots.afterCapture.\(action.rawValue)")).tag(action)
+                    }
+                }
+
+                if settings.afterCapture == .quickAccess {
+                    Picker(L10n("screenshots.quickAccess.position"), selection: $settings.quickAccessPosition) {
+                        Text(L10n("screenshots.quickAccess.bottomLeft")).tag(QuickAccessPosition.bottomLeft)
+                        Text(L10n("screenshots.quickAccess.bottomRight")).tag(QuickAccessPosition.bottomRight)
+                    }
+                    Picker(L10n("screenshots.quickAccess.autoClose"), selection: $settings.quickAccessAutoClose) {
+                        ForEach(ScreenshotSettings.autoCloseChoices, id: \.self) { seconds in
+                            Text(seconds == 0 ? L10n("screenshots.quickAccess.never") : L10n("screenshots.quickAccess.seconds", seconds))
+                                .tag(seconds)
+                        }
+                    }
+                }
+
                 Toggle(L10n("screenshots.copyToClipboard"), isOn: $settings.copyToClipboard)
                 Toggle(L10n("screenshots.playSound"), isOn: $settings.playSound)
             } header: {

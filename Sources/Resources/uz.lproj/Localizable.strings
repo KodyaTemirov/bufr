@@ -293,3 +293,15 @@
 "allInOne.window" = "Oyna";
 "allInOne.fullscreen" = "Ekran";
 "allInOne.capture" = "Suratga olish";
+"menubar.pins" = "Qadalgan skrinshotlar";
+"menubar.pins.unlockAll" = "Barchasini qulfdan chiqarish";
+"screenshots.afterCapture.action" = "Ko'rsatish";
+"screenshots.afterCapture.quickAccess" = "Burchakda kichik rasm (Quick Access)";
+"screenshots.afterCapture.pin" = "Ekranga qadash";
+"screenshots.afterCapture.nothing" = "Hech narsa";
+"screenshots.quickAccess.position" = "Burchak";
+"screenshots.quickAccess.bottomLeft" = "Pastki chap";
+"screenshots.quickAccess.bottomRight" = "Pastki o'ng";
+"screenshots.quickAccess.autoClose" = "Avtomatik yopish";
+"screenshots.quickAccess.never" = "Hech qachon";
+"screenshots.quickAccess.seconds" = "%d soniyadan keyin";

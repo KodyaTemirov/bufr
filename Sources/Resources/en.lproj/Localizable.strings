@@ -293,3 +293,15 @@
 "allInOne.window" = "Window";
 "allInOne.fullscreen" = "Screen";
 "allInOne.capture" = "Capture";
+"menubar.pins" = "Pinned Screenshots";
+"menubar.pins.unlockAll" = "Unlock All";
+"screenshots.afterCapture.action" = "Show";
+"screenshots.afterCapture.quickAccess" = "Thumbnail in the corner (Quick Access)";
+"screenshots.afterCapture.pin" = "Pin on screen";
+"screenshots.afterCapture.nothing" = "Nothing";
+"screenshots.quickAccess.position" = "Corner";
+"screenshots.quickAccess.bottomLeft" = "Bottom left";
+"screenshots.quickAccess.bottomRight" = "Bottom right";
+"screenshots.quickAccess.autoClose" = "Close automatically";
+"screenshots.quickAccess.never" = "Never";
+"screenshots.quickAccess.seconds" = "After %d s";
