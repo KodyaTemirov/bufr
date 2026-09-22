@@ -84,7 +84,14 @@ final class HotKeyRecording {
             return nil
         }
 
-        manager.setBinding(HotKeyBinding(key: key, modifiers: modifiers), for: action)
+        let binding = HotKeyBinding(key: key, modifiers: modifiers)
+        // Another action already uses it: keep recording so the user can pick another combo
+        if manager.action(using: binding, excluding: action) != nil {
+            NSSound.beep()
+            return nil
+        }
+
+        manager.setBinding(binding, for: action)
         stop()
         return nil
     }

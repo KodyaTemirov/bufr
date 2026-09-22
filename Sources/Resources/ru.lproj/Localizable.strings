@@ -96,6 +96,10 @@
 /* Hotkeys */
 "hotkeys.header" = "Глобальная горячая клавиша";
 "hotkeys.action.togglePanel" = "Открыть панель";
+"hotkeys.action.captureArea" = "Снимок области";
+"hotkeys.action.captureWindow" = "Снимок окна";
+"hotkeys.action.captureFullscreen" = "Снимок экрана";
+"hotkeys.action.capturePreviousArea" = "Снимок прошлой области";
 "hotkeys.prompt" = "Нажмите комбинацию клавиш...";
 "hotkeys.none" = "Не задано";
 "hotkeys.reset" = "Сбросить";

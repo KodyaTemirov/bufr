@@ -96,6 +96,10 @@
 /* Hotkeys */
 "hotkeys.header" = "Global tezkor tugma";
 "hotkeys.action.togglePanel" = "Panelni ochish";
+"hotkeys.action.captureArea" = "Hudud skrinshoti";
+"hotkeys.action.captureWindow" = "Oyna skrinshoti";
+"hotkeys.action.captureFullscreen" = "Ekran skrinshoti";
+"hotkeys.action.capturePreviousArea" = "Oldingi hudud skrinshoti";
 "hotkeys.prompt" = "Tugmalar kombinatsiyasini bosing...";
 "hotkeys.none" = "Belgilanmagan";
 "hotkeys.reset" = "Tiklash";

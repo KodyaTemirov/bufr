@@ -96,6 +96,10 @@
 /* Hotkeys */
 "hotkeys.header" = "Global Hotkey";
 "hotkeys.action.togglePanel" = "Open Panel";
+"hotkeys.action.captureArea" = "Capture Area";
+"hotkeys.action.captureWindow" = "Capture Window";
+"hotkeys.action.captureFullscreen" = "Capture Fullscreen";
+"hotkeys.action.capturePreviousArea" = "Capture Previous Area";
 "hotkeys.prompt" = "Press a key combination...";
 "hotkeys.none" = "Not set";
 "hotkeys.reset" = "Reset";

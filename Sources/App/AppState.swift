@@ -242,6 +242,8 @@ final class AppState {
         switch action {
         case .togglePanel:
             togglePanel()
+        case .captureArea, .captureWindow, .captureFullscreen, .capturePreviousArea:
+            break // wired to ScreenshotCoordinator in M1 Task 9
         }
     }
 
