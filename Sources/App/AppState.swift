@@ -181,6 +181,7 @@ final class AppState {
             Task { await ocrIndexer.enqueue(id) }
         }
         startTextIndexing()
+        showLaunchNotices()
         screenshots.keptWindowIDs = { [weak self] in
             self?.pins.windowIDs ?? []
         }
@@ -258,12 +259,23 @@ final class AppState {
 
         switch pasteMode {
         case .activeApp:
+            hintAccessibilityIfNeeded()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
                 self?.clipboardPaster.paste(item, asPlainText: plainText)
             }
         case .clipboard:
             clipboardPaster.copyToClipboard(item, asPlainText: plainText)
         }
+    }
+
+    /// Pasting into apps needs Accessibility; without it the item only lands on the clipboard.
+    /// Explain that once.
+    private func hintAccessibilityIfNeeded() {
+        permissions.refresh()
+        let defaults = UserDefaults.standard
+        guard !permissions.accessibilityGranted, !defaults.bool(forKey: LaunchNotices.accessibilityHintKey) else { return }
+        defaults.set(true, forKey: LaunchNotices.accessibilityHintKey)
+        ToastPresenter.show(L10n("toast.accessibilityNeeded"), systemImage: "accessibility")
     }
 
     /// Copy without pasting (card context menu, menu bar list).
@@ -315,6 +327,32 @@ final class AppState {
             try clipItemStore.fetchItems()
         } catch {
             logger.error("Failed to delete item: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    // MARK: - Launch
+
+    /// First launch of 3.x walks through setup; an update that lost Screen Recording opens the guide.
+    private func showLaunchNotices() {
+        let defaults = UserDefaults.standard
+        let version = AppVersion.current?.description ?? ""
+        let showSetup = LaunchNotices.shouldShowSetup(
+            shownForVersion: defaults.string(forKey: LaunchNotices.setupVersionKey),
+            currentVersion: version
+        )
+        let hintPermission = LaunchNotices.shouldHintPermissionLost(permissions.screenCapture, showingSetup: showSetup)
+        guard showSetup || hintPermission else { return }
+        if showSetup {
+            defaults.set(version, forKey: LaunchNotices.setupVersionKey)
+        }
+
+        Task {
+            try? await Task.sleep(for: .seconds(1)) // after the menu bar item exists
+            if showSetup {
+                ScreenshotSetupWindowController.shared.show()
+            } else {
+                PermissionGuideWindowController.shared.show()
+            }
         }
     }
 

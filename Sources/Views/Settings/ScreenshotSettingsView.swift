@@ -120,6 +120,9 @@ struct ScreenshotSettingsView: View {
                             PermissionGuideWindowController.shared.show()
                         }
                     }
+                    Button(L10n("setup.open")) {
+                        ScreenshotSetupWindowController.shared.show()
+                    }
                 }
             } header: {
                 Label(L10n("screenshots.permission.header"), systemImage: "lock.shield")

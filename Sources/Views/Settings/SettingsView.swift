@@ -4,6 +4,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     case general
     case screenshots
     case hotkeys
+    case permissions
     case exclusions
     case updates
     case about
@@ -15,6 +16,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .general: L10n("settings.tab.general")
         case .screenshots: L10n("settings.tab.screenshots")
         case .hotkeys: L10n("settings.tab.hotkeys")
+        case .permissions: L10n("settings.tab.permissions")
         case .exclusions: L10n("settings.tab.exclusions")
         case .updates: L10n("settings.tab.updates")
         case .about: L10n("settings.tab.about")
@@ -26,6 +28,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .general: "gear"
         case .screenshots: "camera.viewfinder"
         case .hotkeys: "keyboard"
+        case .permissions: "lock.shield"
         case .exclusions: "eye.slash"
         case .updates: "arrow.triangle.2.circlepath"
         case .about: "info.circle"
@@ -65,6 +68,8 @@ struct SettingsView: View {
                     ScreenshotSettingsView()
                 case .hotkeys:
                     HotKeySettingsView()
+                case .permissions:
+                    PermissionsSettingsView()
                 case .exclusions:
                     ExclusionsSettingsView()
                 case .updates:

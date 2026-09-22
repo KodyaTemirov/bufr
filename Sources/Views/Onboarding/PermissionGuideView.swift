@@ -68,41 +68,13 @@ struct PermissionGuideView: View {
 final class PermissionGuideWindowController {
     static let shared = PermissionGuideWindowController()
 
-    private var window: NSWindow?
-    private var closeObserver: NSObjectProtocol?
+    private let presenter = SingleWindowPresenter()
 
     private init() {}
 
     func show() {
-        if let window {
-            AppActivation.present(window)
-            return
+        presenter.show(title: L10n("permission.guide.title")) { close in
+            PermissionGuideView(onClose: close)
         }
-
-        let root = PermissionGuideView(onClose: { [weak self] in self?.window?.close() })
-            .environment(AppState.shared)
-        let window = NSWindow(contentViewController: NSHostingController(rootView: root))
-        window.styleMask = [.titled, .closable]
-        window.title = L10n("permission.guide.title")
-        window.isReleasedWhenClosed = false
-        window.center()
-        // Drop the window on close so the view (and its status polling) goes away
-        closeObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.willCloseNotification, object: window, queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.windowWillClose()
-            }
-        }
-        self.window = window
-        AppActivation.present(window)
-    }
-
-    private func windowWillClose() {
-        if let closeObserver {
-            NotificationCenter.default.removeObserver(closeObserver)
-        }
-        closeObserver = nil
-        window = nil
     }
 }
