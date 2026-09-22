@@ -4,13 +4,19 @@ import HotKey
 import Testing
 @testable import Bufr
 
+/// One fixed defaults domain, reset before every test: a fresh suite name per test would leave
+/// a new plist in ~/Library/Preferences on every run.
 @MainActor
+@Suite(.serialized)
 struct HotKeyBindingTests {
+    static let suiteName = "com.bufr.tests.hotkeys"
+
     let defaults: UserDefaults
     let store: HotKeyBindingStore
 
     init() {
-        defaults = UserDefaults(suiteName: "com.bufr.tests.\(UUID().uuidString)")!
+        defaults = UserDefaults(suiteName: Self.suiteName)!
+        defaults.removePersistentDomain(forName: Self.suiteName)
         store = HotKeyBindingStore(defaults: defaults)
     }
 
