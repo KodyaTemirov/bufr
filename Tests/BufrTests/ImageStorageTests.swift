@@ -33,6 +33,21 @@ struct ImageStorageTests {
         #expect(try FileManager.default.contentsOfDirectory(atPath: thumbnails.path).isEmpty)
     }
 
+    /// The thumbnail is generated in the background; deleting right after saving must not let
+    /// it be written afterwards (the losing side of a concurrent duplicate does exactly this).
+    @Test func deleteRightAfterSaveLeavesNoThumbnail() async throws {
+        let dir = try TestSupport.makeTempDirectory()
+        let storage = ImageStorage(baseDirectory: dir)
+        let id = UUID()
+
+        let filename = try await storage.saveImage(TestImages.png(width: 2400, height: 1600), id: id)
+        await storage.deleteAssets(imagePath: filename, itemId: id)
+        try await Task.sleep(for: .seconds(1)) // give a stray thumbnail job time to finish
+
+        let thumbnails = dir.appendingPathComponent("thumbnails")
+        #expect(try FileManager.default.contentsOfDirectory(atPath: thumbnails.path).isEmpty)
+    }
+
     @Test func deleteAssetsIgnoresPathTraversal() async throws {
         let dir = try TestSupport.makeTempDirectory()
         let storage = ImageStorage(baseDirectory: dir)

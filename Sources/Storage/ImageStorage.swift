@@ -11,6 +11,8 @@ actor ImageStorage {
         cache.countLimit = 100
         return cache
     }()
+    /// Background thumbnail jobs, so a delete can wait for one instead of racing it
+    private var pendingThumbnails: [UUID: Task<Void, Never>] = [:]
 
     init(baseDirectory: URL) {
         imagesDir = baseDirectory.appendingPathComponent("images", isDirectory: true)
@@ -30,11 +32,16 @@ actor ImageStorage {
 
         // Generate thumbnail in background — don't block save
         let thumbDir = thumbnailsDir
-        Task.detached(priority: .utility) {
+        pendingThumbnails[id] = Task.detached(priority: .utility) { [weak self] in
             Self.generateThumbnailSync(from: data, id: id, thumbnailsDir: thumbDir)
+            await self?.thumbnailFinished(id)
         }
 
         return filename
+    }
+
+    private func thumbnailFinished(_ id: UUID) {
+        pendingThumbnails[id] = nil
     }
 
     // MARK: - Validation
@@ -73,7 +80,7 @@ actor ImageStorage {
 
     /// Removes an item's image and thumbnail. Rows created before 3.0 used a different UUID
     /// for the file than for the item, so thumbnails for both UUIDs are removed.
-    func deleteAssets(imagePath: String?, itemId: UUID) {
+    func deleteAssets(imagePath: String?, itemId: UUID) async {
         var ids: Set<UUID> = [itemId]
         if let imagePath, isValidFilename(imagePath) {
             try? FileManager.default.removeItem(at: imagesDir.appendingPathComponent(imagePath))
@@ -82,6 +89,8 @@ actor ImageStorage {
             }
         }
         for id in ids {
+            // A thumbnail still being generated would otherwise be written after this delete
+            await pendingThumbnails[id]?.value
             try? FileManager.default.removeItem(at: thumbnailsDir.appendingPathComponent("\(id.uuidString)_thumb.png"))
             thumbnailCache.removeObject(forKey: id.uuidString as NSString)
         }
