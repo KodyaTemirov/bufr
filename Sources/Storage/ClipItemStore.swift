@@ -59,14 +59,15 @@ final class ClipItemStore {
         }
     }
 
-    /// Moves an existing item to the top of the history.
+    /// Moves an existing item to the top of the history. Only `created_at` is written:
+    /// callers may hold a copy that is older than the row (e.g. renamed since).
     @discardableResult
     func touch(_ item: ClipItem) throws -> ClipItem {
         let touched = try database.dbQueue.write { db -> ClipItem in
-            var updated = item
-            updated.createdAt = Date()
-            try updated.update(db)
-            return updated
+            try ClipItem
+                .filter(key: item.id)
+                .updateAll(db, ClipItem.Columns.createdAt.set(to: Date()))
+            return try ClipItem.find(db, key: item.id)
         }
         prependItem(touched)
         return touched

@@ -52,4 +52,15 @@ struct ClipItemStoreTests {
         try store.fetchItems()
         #expect(store.items.first?.id == old.id)
     }
+
+    /// Pinboard cards and the menu bar list hold copies that can be older than the database row.
+    @Test func touchWithStaleCopyKeepsNewerEdits() throws {
+        let stale = try store.insert(ClipItem(contentType: .text, textContent: "text", hash: "h-stale"))
+        try store.updateCustomTitle(stale, newTitle: "Renamed")
+
+        let touched = try store.touch(stale)
+
+        #expect(touched.customTitle == "Renamed")
+        #expect(try store.existingItem(hash: "h-stale")?.customTitle == "Renamed")
+    }
 }
