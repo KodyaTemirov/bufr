@@ -26,6 +26,8 @@ enum ScreenPinGeometry {
     static func fitted(_ size: CGSize, within limit: CGSize) -> CGSize {
         guard size.width > 0, size.height > 0 else { return size }
         let scale = min(1, limit.width / size.width, limit.height / size.height)
+        // At 1:1 keep fractional points (201 px = 100.5 pt): rounding would resample the image
+        guard scale < 1 else { return size }
         return CGSize(width: (size.width * scale).rounded(), height: (size.height * scale).rounded())
     }
 

@@ -10,7 +10,8 @@ struct QuickAccessEntry: Identifiable {
 }
 
 /// The stack of recent captures shown in a screen corner. Newest first; cards close
-/// themselves after a delay that pauses while the pointer is over a card.
+/// themselves after a delay. While the pointer is over any card the whole stack waits, so
+/// cards never shift under the pointer.
 @MainActor @Observable
 final class QuickAccessController {
     static let maxVisible = 5
@@ -35,7 +36,9 @@ final class QuickAccessController {
     func add(_ entry: QuickAccessEntry) {
         entries.removeAll { $0.id == entry.id }
         entries.insert(entry, at: 0)
-        scheduleAutoClose(entry.id)
+        if hovered.isEmpty {
+            scheduleAutoClose(entry.id)
+        }
         onChange()
     }
 
@@ -59,11 +62,12 @@ final class QuickAccessController {
     func setHovered(_ id: UUID, _ isHovered: Bool) {
         if isHovered {
             hovered.insert(id)
-            timers[id]?.cancel()
-            timers[id] = nil
+            timers.values.forEach { $0.cancel() }
+            timers = [:]
         } else {
             hovered.remove(id)
-            scheduleAutoClose(id)
+            guard hovered.isEmpty else { return }
+            entries.forEach { scheduleAutoClose($0.id) }
         }
     }
 
@@ -76,7 +80,7 @@ final class QuickAccessController {
     private func scheduleAutoClose(_ id: UUID) {
         timers[id]?.cancel()
         timers[id] = nil
-        guard !hovered.contains(id), let delay = autoCloseDelay() else { return }
+        guard hovered.isEmpty, entries.contains(where: { $0.id == id }), let delay = autoCloseDelay() else { return }
         timers[id] = Task { [weak self] in
             try? await Task.sleep(for: delay)
             guard !Task.isCancelled else { return }

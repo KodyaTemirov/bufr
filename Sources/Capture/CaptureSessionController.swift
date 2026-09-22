@@ -26,6 +26,7 @@ final class CaptureSessionController {
     private var observers: [(center: NotificationCenter, token: NSObjectProtocol)] = []
     private var previousArea: CaptureRegion?
     private var toolbarPanel: AllInOneToolbarPanel?
+    private var isAdjustableSession = false
     private let toolbarModel = AllInOneToolbarModel()
 
     /// Returns nil when the user cancels.
@@ -126,6 +127,14 @@ final class CaptureSessionController {
                 screenRect: ScreenGeometry.cocoaRect(fromLocal: localRect, screenFrame: screen.frame)
             )
 
+        case let .display(displayID):
+            guard let frame = frames[displayID] else { return nil }
+            return CaptureOutcome(
+                image: frame.image, pointScale: frame.pointScale,
+                sourceAppId: frontmost?.bundleIdentifier, sourceAppName: frontmost?.localizedName,
+                region: nil, screenRect: DisplayInfo.screen(for: displayID)?.frame
+            )
+
         case let .window(window):
             let capture = try await service.captureWindow(window.windowID, content: content, shadow: options.windowShadow)
             let owner = NSRunningApplication(processIdentifier: window.ownerPID)
@@ -177,8 +186,13 @@ final class CaptureSessionController {
         // Activating Bufr makes key events, the crosshair cursor and first responder reliable
         NSApp.activate(ignoringOtherApps: true)
         overlayWindows.forEach { $0.orderFrontRegardless() }
+        // Keyboard goes to the display holding the preselection (all-in-one), else under the mouse
+        isAdjustableSession = adjustable
         let mouse = NSEvent.mouseLocation
-        if let keyWindow = overlayWindows.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? overlayWindows.first {
+        let keyWindow = overlayWindows.first { ($0.contentView as? CaptureOverlayView)?.adjustedLocalSelection != nil }
+            ?? overlayWindows.first { NSMouseInRect(mouse, $0.frame, false) }
+            ?? overlayWindows.first
+        if let keyWindow {
             keyWindow.makeKey()
             keyWindow.makeFirstResponder(keyWindow.contentView)
         }
@@ -253,26 +267,18 @@ final class CaptureSessionController {
 
     private func captureAdjustedSelection() {
         guard let view = overlayViews.first(where: { $0.adjustedLocalSelection != nil }),
-              let localRect = view.adjustedLocalSelection,
-              let displayID = displayID(of: view)
+              let localRect = view.adjustedLocalSelection
         else {
             NSSound.beep()
             return
         }
-        finish(.area(displayID: displayID, localRect: localRect))
+        finish(.area(displayID: view.displayID, localRect: localRect))
     }
 
     /// "Screen" in the mode bar: the whole display under the pointer, from the frozen frame.
     private func captureFullscreenFromToolbar() {
-        guard let screen = DisplayInfo.screenUnderMouse(), let displayID = screen.displayID else { return }
-        finish(.area(displayID: displayID, localRect: CGRect(origin: .zero, size: screen.frame.size)))
-    }
-
-    private func displayID(of view: CaptureOverlayView) -> CGDirectDisplayID? {
-        guard let window = view.window,
-              let screen = NSScreen.screens.first(where: { $0.frame == window.frame })
-        else { return nil }
-        return screen.displayID
+        guard let displayID = DisplayInfo.screenUnderMouse()?.displayID else { return }
+        finish(.display(displayID))
     }
 
     private func tearDown() {
@@ -308,10 +314,16 @@ extension CaptureSessionController: CaptureOverlayViewDelegate {
     }
 
     func overlayViewDidAdjust(_ view: CaptureOverlayView) {
-        // One editable selection at a time, even across displays
+        // One editable selection at a time, even across displays; its display gets the keyboard
         for other in overlayViews where other !== view {
             other.clearSelection()
         }
+        view.window?.makeKey()
+        view.window?.makeFirstResponder(view)
+    }
+
+    func overlayViewDidRequestCapture(_ view: CaptureOverlayView) {
+        captureAdjustedSelection()
     }
 
     func overlayViewDidRequestPreviousArea(_ view: CaptureOverlayView) {
@@ -325,6 +337,10 @@ extension CaptureSessionController: CaptureOverlayViewDelegate {
     }
 
     func overlayViewMouseEntered(_ view: CaptureOverlayView) {
+        // In all-in-one mode the display holding the selection keeps the keyboard (arrows, Return)
+        if isAdjustableSession, overlayViews.contains(where: { $0 !== view && $0.adjustedLocalSelection != nil }) {
+            return
+        }
         view.window?.makeKey()
         view.window?.makeFirstResponder(view)
     }

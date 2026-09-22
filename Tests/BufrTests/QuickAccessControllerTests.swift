@@ -84,4 +84,32 @@ struct QuickAccessAutoCloseTests {
 
         #expect(controller.entries.count == 1)
     }
+
+    /// Cards below or above the hovered one must not expire and shift the stack under the pointer.
+    @Test func hoveringAnyCardPausesTheWholeStack() async throws {
+        let controller = QuickAccessController(autoCloseDelay: { .milliseconds(100) })
+        let older = entry(), newer = entry()
+        controller.add(older)
+        controller.add(newer)
+        controller.setHovered(older.id, true)
+
+        try await Task.sleep(for: .milliseconds(400))
+        #expect(controller.entries.count == 2)
+
+        controller.setHovered(older.id, false)
+        try await Task.sleep(for: .milliseconds(400))
+        #expect(controller.entries.isEmpty)
+    }
+}
+
+struct QuickAccessThumbnailTests {
+    /// A 5K capture must not stay alive behind a 220 pt card.
+    @Test func thumbnailIsSmallAndIndependent() throws {
+        let thumbnail = QuickAccessThumbnail.make(from: TestImages.cgImage(width: 5120, height: 2880), pointScale: 2)
+        let cgImage = try #require(thumbnail.cgImage(forProposedRect: nil, context: nil, hints: nil))
+
+        #expect(cgImage.width <= QuickAccessThumbnail.maxPixelSize)
+        #expect(cgImage.height <= QuickAccessThumbnail.maxPixelSize)
+        #expect(abs(thumbnail.size.width / thumbnail.size.height - 5120.0 / 2880.0) < 0.02)
+    }
 }

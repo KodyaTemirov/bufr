@@ -11,10 +11,13 @@ protocol CaptureOverlayViewDelegate: AnyObject {
     func overlayViewMouseEntered(_ view: CaptureOverlayView)
     /// All-in-one mode: this view now holds the (only) editable selection
     func overlayViewDidAdjust(_ view: CaptureOverlayView)
+    /// All-in-one mode: Return on a display without the selection
+    func overlayViewDidRequestCapture(_ view: CaptureOverlayView)
 }
 
 extension CaptureOverlayViewDelegate {
     func overlayViewDidAdjust(_ view: CaptureOverlayView) {}
+    func overlayViewDidRequestCapture(_ view: CaptureOverlayView) {}
 }
 
 /// Frozen screen with selection UI for one display.
@@ -227,7 +230,9 @@ final class CaptureOverlayView: NSView {
             return
         }
         lastDragPoint = point
-        if adjustable, let current = selection, !current.isEmpty {
+        // A selection covering the whole display (after "Screen") can't be moved anyway:
+        // dragging inside it draws a new area
+        if adjustable, let current = selection, !current.isEmpty, !covers(current) {
             // Small selections shrink the handle hit area so their middle still moves them
             let tolerance = min(handleSize, min(current.width, current.height) / 4)
             if let handle = SelectionGeometry.handle(at: point, in: current, tolerance: tolerance) {
@@ -337,6 +342,8 @@ final class CaptureOverlayView: NSView {
             if adjustable {
                 if let localRect = adjustedLocalSelection {
                     delegate?.overlayView(self, didSelect: .area(displayID: configuration.displayID, localRect: localRect))
+                } else {
+                    delegate?.overlayViewDidRequestCapture(self)
                 }
             } else if dragStart == nil {
                 delegate?.overlayViewDidRequestPreviousArea(self)
@@ -347,6 +354,12 @@ final class CaptureOverlayView: NSView {
             break // swallow: no beeps while capturing
         }
     }
+
+    private func covers(_ rect: CGRect) -> Bool {
+        rect.width >= bounds.width - 1 && rect.height >= bounds.height - 1
+    }
+
+    var displayID: CGDirectDisplayID { configuration.displayID }
 
     /// The editable selection as a display-local rect (top-left origin), if it is usable.
     var adjustedLocalSelection: CGRect? {

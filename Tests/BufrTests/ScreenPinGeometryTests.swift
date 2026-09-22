@@ -50,4 +50,9 @@ struct ScreenPinGeometryTests {
         #expect(ScreenPinGeometry.opacity(0.3, scrollDelta: -50) == ScreenPinGeometry.minimumOpacity)
         #expect(ScreenPinGeometry.opacity(0.9, scrollDelta: 50) == 1)
     }
+
+    /// Rounding a 201 px (100.5 pt) capture would resample it and soften text.
+    @Test func imageThatFitsKeepsExactSize() {
+        #expect(ScreenPinGeometry.fitted(CGSize(width: 100.5, height: 50), within: CGSize(width: 1000, height: 1000)) == CGSize(width: 100.5, height: 50))
+    }
 }

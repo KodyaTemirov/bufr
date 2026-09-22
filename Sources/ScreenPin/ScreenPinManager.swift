@@ -42,8 +42,8 @@ final class ScreenPinManager {
         let panel = ScreenPinPanel(item: item, image: image, frame: frame)
         panel.manager = self
         pins.append(panel)
+        // Not made key: the user keeps typing in their app; clicking the pin focuses it
         panel.orderFrontRegardless()
-        panel.makeKey()
     }
 
     func close(_ panel: ScreenPinPanel) {

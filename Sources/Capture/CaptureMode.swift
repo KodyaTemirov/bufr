@@ -23,6 +23,8 @@ struct CaptureRegion: Codable, Equatable, Sendable {
 enum CaptureSelection: Equatable {
     case area(displayID: CGDirectDisplayID, localRect: CGRect)
     case window(CapturableWindow)
+    /// The whole display (all-in-one "Screen"); not remembered as the previous area
+    case display(CGDirectDisplayID)
 }
 
 struct CaptureOutcome: Sendable {

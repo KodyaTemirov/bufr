@@ -334,13 +334,9 @@ final class AppState {
     private func showAfterCapture(_ item: ClipItem, outcome: CaptureOutcome) {
         switch screenshotSettings.afterCapture {
         case .quickAccess:
-            let pointSize = CGSize(
-                width: CGFloat(outcome.image.width) / outcome.pointScale,
-                height: CGFloat(outcome.image.height) / outcome.pointScale
-            )
             quickAccessPresenter?.show(QuickAccessEntry(
                 item: item,
-                thumbnail: NSImage(cgImage: outcome.image, size: pointSize),
+                thumbnail: QuickAccessThumbnail.make(from: outcome.image, pointScale: outcome.pointScale),
                 sourceRect: outcome.screenRect
             ))
         case .pin:

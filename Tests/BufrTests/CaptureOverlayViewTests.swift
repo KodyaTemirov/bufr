@@ -8,12 +8,14 @@ final class OverlayDelegateSpy: CaptureOverlayViewDelegate {
     var selections: [CaptureSelection] = []
     var cancelled = false
     var windowModeRequests: [Bool] = []
+    var captureRequests = 0
 
     func overlayView(_ view: CaptureOverlayView, didSelect selection: CaptureSelection) { selections.append(selection) }
     func overlayViewDidCancel(_ view: CaptureOverlayView) { cancelled = true }
     func overlayView(_ view: CaptureOverlayView, didSwitchToWindowMode windowMode: Bool) { windowModeRequests.append(windowMode) }
     func overlayViewDidRequestPreviousArea(_ view: CaptureOverlayView) {}
     func overlayViewMouseEntered(_ view: CaptureOverlayView) {}
+    func overlayViewDidRequestCapture(_ view: CaptureOverlayView) { captureRequests += 1 }
 }
 
 /// A 100×50 pt screen at the Cocoa origin (so view points equal Cocoa global points).
@@ -199,5 +201,27 @@ struct CaptureOverlayViewTests {
         view.keyDown(with: key(kVK_Return))
 
         #expect(spy.selections == [.area(displayID: 7, localRect: CGRect(x: 5, y: 25, width: 40, height: 20))])
+    }
+
+    /// The selection may live on another display; the session decides what Return captures.
+    @Test func returnWithoutOwnSelectionAsksTheSession() {
+        let view = makeAdjustableView()
+
+        view.keyDown(with: key(kVK_Return))
+
+        #expect(spy.selections.isEmpty)
+        #expect(spy.captureRequests == 1)
+    }
+
+    /// After "Screen" the whole display may be preselected; dragging must still draw a new area.
+    @Test func dragInsideFullScreenSelectionDrawsNewArea() {
+        let view = makeAdjustableView(initialSelection: CGRect(x: 0, y: 0, width: 100, height: 50))
+
+        view.mouseDown(with: mouse(.leftMouseDown, 20, 40))
+        view.mouseDragged(with: mouse(.leftMouseDragged, 40, 30))
+        view.mouseUp(with: mouse(.leftMouseUp, 40, 30))
+        view.keyDown(with: key(kVK_Return))
+
+        #expect(spy.selections == [.area(displayID: 7, localRect: CGRect(x: 20, y: 10, width: 20, height: 10))])
     }
 }
