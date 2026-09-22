@@ -288,3 +288,8 @@
 "card.pin" = "Pin to Screen";
 "quickAccess.closeAll" = "Close All";
 "toast.savedToFallback" = "Saved to “%@”: the chosen folder is unavailable";
+"hotkeys.action.captureAllInOne" = "All-in-One…";
+"allInOne.area" = "Area";
+"allInOne.window" = "Window";
+"allInOne.fullscreen" = "Screen";
+"allInOne.capture" = "Capture";

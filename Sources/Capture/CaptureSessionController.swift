@@ -25,6 +25,8 @@ final class CaptureSessionController {
     private var continuation: CheckedContinuation<CaptureSelection?, Never>?
     private var observers: [(center: NotificationCenter, token: NSObjectProtocol)] = []
     private var previousArea: CaptureRegion?
+    private var toolbarPanel: AllInOneToolbarPanel?
+    private let toolbarModel = AllInOneToolbarModel()
 
     /// Returns nil when the user cancels.
     func capture(_ mode: CaptureMode, options: Options) async throws -> CaptureOutcome? {
@@ -62,10 +64,13 @@ final class CaptureSessionController {
                 )
             }
             // No previous area yet, or its display is gone: let the user pick one
-            return try await interactiveCapture(windowMode: false, content: content, options: options, frontmost: frontmost)
+            return try await interactiveCapture(windowMode: false, adjustable: false, content: content, options: options, frontmost: frontmost)
 
         case .area, .window:
-            return try await interactiveCapture(windowMode: mode == .window, content: content, options: options, frontmost: frontmost)
+            return try await interactiveCapture(windowMode: mode == .window, adjustable: false, content: content, options: options, frontmost: frontmost)
+
+        case .allInOne:
+            return try await interactiveCapture(windowMode: false, adjustable: true, content: content, options: options, frontmost: frontmost)
         }
     }
 
@@ -78,6 +83,7 @@ final class CaptureSessionController {
 
     private func interactiveCapture(
         windowMode: Bool,
+        adjustable: Bool,
         content: SCShareableContent,
         options: Options,
         frontmost: NSRunningApplication?
@@ -101,8 +107,10 @@ final class CaptureSessionController {
         let windows = WindowListProvider.snapshot()
         previousArea = options.previousArea
 
-        guard let selection = await present(frames: frames, windows: windows, windowMode: windowMode, showMagnifier: options.showMagnifier)
-        else { return nil }
+        guard let selection = await present(
+            frames: frames, windows: windows, windowMode: windowMode,
+            adjustable: adjustable, showMagnifier: options.showMagnifier
+        ) else { return nil }
 
         switch selection {
         case let .area(displayID, localRect):
@@ -134,6 +142,7 @@ final class CaptureSessionController {
         frames: [CGDirectDisplayID: ScreenCaptureService.Capture],
         windows: [CapturableWindow],
         windowMode: Bool,
+        adjustable: Bool,
         showMagnifier: Bool
     ) async -> CaptureSelection? {
         let previousApp = NSWorkspace.shared.frontmostApplication
@@ -141,6 +150,11 @@ final class CaptureSessionController {
 
         for screen in NSScreen.screens {
             guard let displayID = screen.displayID, let frame = frames[displayID] else { continue }
+            // All-in-one starts from the previous area when it was on this display
+            var initialSelection: CGRect?
+            if adjustable, let region = previousArea, region.displayUUID == DisplayInfo.uuidString(for: displayID) {
+                initialSelection = ScreenGeometry.flipped(region.localRect, height: screen.frame.height)
+            }
             let view = CaptureOverlayView(
                 configuration: .init(
                     image: frame.image,
@@ -149,9 +163,11 @@ final class CaptureSessionController {
                     primaryHeight: primaryHeight,
                     backingScale: screen.backingScaleFactor,
                     windows: windows,
-                    showMagnifier: showMagnifier
+                    showMagnifier: showMagnifier,
+                    initialSelection: initialSelection
                 ),
-                windowMode: windowMode
+                windowMode: windowMode,
+                adjustable: adjustable
             )
             view.delegate = self
             overlayViews.append(view)
@@ -165,6 +181,9 @@ final class CaptureSessionController {
         if let keyWindow = overlayWindows.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? overlayWindows.first {
             keyWindow.makeKey()
             keyWindow.makeFirstResponder(keyWindow.contentView)
+        }
+        if adjustable {
+            showToolbar(windowMode: windowMode)
         }
         observeCancellation()
 
@@ -211,7 +230,55 @@ final class CaptureSessionController {
         continuation.resume(returning: selection)
     }
 
+    private func showToolbar(windowMode: Bool) {
+        toolbarModel.windowMode = windowMode
+        guard let screen = DisplayInfo.screenUnderMouse() else { return }
+        let toolbar = AllInOneToolbar(
+            model: toolbarModel,
+            onArea: { [weak self] in self?.setWindowMode(false) },
+            onWindow: { [weak self] in self?.setWindowMode(true) },
+            onFullscreen: { [weak self] in self?.captureFullscreenFromToolbar() },
+            onCancel: { [weak self] in self?.cancel() },
+            onCapture: { [weak self] in self?.captureAdjustedSelection() }
+        )
+        let panel = AllInOneToolbarPanel(rootView: toolbar, screen: screen)
+        panel.orderFrontRegardless()
+        toolbarPanel = panel
+    }
+
+    private func setWindowMode(_ windowMode: Bool) {
+        toolbarModel.windowMode = windowMode
+        overlayViews.forEach { $0.windowMode = windowMode }
+    }
+
+    private func captureAdjustedSelection() {
+        guard let view = overlayViews.first(where: { $0.adjustedLocalSelection != nil }),
+              let localRect = view.adjustedLocalSelection,
+              let displayID = displayID(of: view)
+        else {
+            NSSound.beep()
+            return
+        }
+        finish(.area(displayID: displayID, localRect: localRect))
+    }
+
+    /// "Screen" in the mode bar: the whole display under the pointer, from the frozen frame.
+    private func captureFullscreenFromToolbar() {
+        guard let screen = DisplayInfo.screenUnderMouse(), let displayID = screen.displayID else { return }
+        finish(.area(displayID: displayID, localRect: CGRect(origin: .zero, size: screen.frame.size)))
+    }
+
+    private func displayID(of view: CaptureOverlayView) -> CGDirectDisplayID? {
+        guard let window = view.window,
+              let screen = NSScreen.screens.first(where: { $0.frame == window.frame })
+        else { return nil }
+        return screen.displayID
+    }
+
     private func tearDown() {
+        toolbarPanel?.orderOut(nil)
+        toolbarPanel?.close()
+        toolbarPanel = nil
         for observer in observers {
             observer.center.removeObserver(observer.token)
         }
@@ -237,7 +304,14 @@ extension CaptureSessionController: CaptureOverlayViewDelegate {
     }
 
     func overlayView(_ view: CaptureOverlayView, didSwitchToWindowMode windowMode: Bool) {
-        overlayViews.forEach { $0.windowMode = windowMode }
+        setWindowMode(windowMode)
+    }
+
+    func overlayViewDidAdjust(_ view: CaptureOverlayView) {
+        // One editable selection at a time, even across displays
+        for other in overlayViews where other !== view {
+            other.clearSelection()
+        }
     }
 
     func overlayViewDidRequestPreviousArea(_ view: CaptureOverlayView) {

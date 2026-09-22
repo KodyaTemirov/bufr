@@ -8,6 +8,7 @@ enum HotKeyAction: String, CaseIterable, Codable, Sendable {
     case captureWindow
     case captureFullscreen
     case capturePreviousArea
+    case captureAllInOne
 
     enum Group: CaseIterable {
         case panel
@@ -17,7 +18,7 @@ enum HotKeyAction: String, CaseIterable, Codable, Sendable {
     var group: Group {
         switch self {
         case .togglePanel: .panel
-        case .captureArea, .captureWindow, .captureFullscreen, .capturePreviousArea: .screenshots
+        case .captureArea, .captureWindow, .captureFullscreen, .capturePreviousArea, .captureAllInOne: .screenshots
         }
     }
 
@@ -26,6 +27,7 @@ enum HotKeyAction: String, CaseIterable, Codable, Sendable {
         case .togglePanel: HotKeyBinding(key: .v, modifiers: [.command, .shift])
         case .captureArea: HotKeyBinding(key: .four, modifiers: [.command, .shift])
         case .captureFullscreen: HotKeyBinding(key: .three, modifiers: [.command, .shift])
+        case .captureAllInOne: HotKeyBinding(key: .five, modifiers: [.command, .shift])
         case .captureWindow, .capturePreviousArea: nil
         }
     }

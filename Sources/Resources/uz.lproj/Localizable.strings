@@ -288,3 +288,8 @@
 "card.pin" = "Ekranga qadash";
 "quickAccess.closeAll" = "Barchasini yopish";
 "toast.savedToFallback" = "«%@» ga saqlandi: tanlangan jild mavjud emas";
+"hotkeys.action.captureAllInOne" = "Barcha rejimlar…";
+"allInOne.area" = "Hudud";
+"allInOne.window" = "Oyna";
+"allInOne.fullscreen" = "Ekran";
+"allInOne.capture" = "Suratga olish";

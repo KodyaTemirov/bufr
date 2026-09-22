@@ -288,3 +288,8 @@
 "card.pin" = "Закрепить на экране";
 "quickAccess.closeAll" = "Закрыть все";
 "toast.savedToFallback" = "Сохранено в «%@»: выбранная папка недоступна";
+"hotkeys.action.captureAllInOne" = "Все режимы…";
+"allInOne.area" = "Область";
+"allInOne.window" = "Окно";
+"allInOne.fullscreen" = "Экран";
+"allInOne.capture" = "Снять";

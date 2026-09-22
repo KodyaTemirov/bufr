@@ -330,6 +330,8 @@ final class AppState {
             screenshots.capture(.fullscreen)
         case .capturePreviousArea:
             screenshots.capture(.previousArea)
+        case .captureAllInOne:
+            screenshots.capture(.allInOne)
         }
     }
 

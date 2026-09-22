@@ -96,6 +96,7 @@ struct MenuBarView: View {
         (.captureWindow, .window),
         (.captureFullscreen, .fullscreen),
         (.capturePreviousArea, .previousArea),
+        (.captureAllInOne, .allInOne),
     ]
 
     /// A shortcut macOS still owns would be misleading next to the item

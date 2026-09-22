@@ -5,11 +5,8 @@ enum CaptureMode: Sendable, Equatable {
     case window
     case fullscreen
     case previousArea
-
-    /// Area and window mode let the user pick on a frozen screen
-    var usesOverlay: Bool {
-        self == .area || self == .window
-    }
+    /// ⌘⇧5: editable selection plus a mode bar
+    case allInOne
 }
 
 /// A display-local rectangle, remembered for "Capture Previous Area".
