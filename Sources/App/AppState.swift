@@ -23,6 +23,8 @@ final class AppState {
     let screenshotSettings: ScreenshotSettings
     let permissions: PermissionsManager
     let screenshots: ScreenshotCoordinator
+    let pins: ScreenPinManager
+    let quickAccess: QuickAccessController
     var updater: AppUpdater
 
     // MARK: - UI State
@@ -113,6 +115,11 @@ final class AppState {
             ingestor: clipIngestor,
             store: clipItemStore
         )
+        self.pins = ScreenPinManager()
+        self.quickAccess = QuickAccessController(autoCloseDelay: { [screenshotSettings] in
+            let seconds = screenshotSettings.quickAccessAutoClose
+            return seconds > 0 ? .seconds(seconds) : nil
+        })
         self.updater = AppUpdater()
 
         // Load initial data
@@ -144,6 +151,9 @@ final class AppState {
         }
         screenshots.showPermissionGuide = {
             PermissionGuideWindowController.shared.show()
+        }
+        pins.onCopy = { [weak self] item in
+            self?.copyItem(item)
         }
 
         // Panel close callback

@@ -47,7 +47,17 @@ actor ImageStorage {
     // MARK: - Validation
 
     private func isValidFilename(_ filename: String) -> Bool {
+        Self.isValidFilename(filename)
+    }
+
+    private nonisolated static func isValidFilename(_ filename: String) -> Bool {
         !filename.contains("/") && !filename.contains("..") && !filename.isEmpty
+    }
+
+    /// Location of a history image (e.g. for drag-out); nil for names that could escape the folder.
+    nonisolated func fileURL(for filename: String) -> URL? {
+        guard Self.isValidFilename(filename) else { return nil }
+        return imagesDir.appendingPathComponent(filename)
     }
 
     // MARK: - Load

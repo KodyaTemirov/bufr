@@ -285,3 +285,4 @@
 "screenPin.closeAll" = "Close All Pins";
 "toast.copied" = "Copied";
 "toast.saved" = "Saved";
+"card.pin" = "Pin to Screen";

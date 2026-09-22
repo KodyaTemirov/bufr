@@ -108,7 +108,7 @@ struct ClipCardView: View {
         .animation(.easeInOut(duration: 0.2), value: isHovered)
         .animation(.spring(duration: 0.25, bounce: 0.2), value: isSelected)
         .onHover { isHovered = $0 }
-        .draggable(dragPayload)
+        .modifier(ClipDragModifier(item: item, textPayload: dragPayload))
         .contextMenu {
             if !appState.pinboardStore.pinboards.isEmpty {
                 Menu(L10n("card.addToBoard")) {
@@ -133,6 +133,17 @@ struct ClipCardView: View {
 
             Button(L10n("card.rename")) {
                 onRename?(item)
+            }
+
+            if item.contentType == .image {
+                Button(L10n("card.pin")) {
+                    appState.hidePanel()
+                    Task { await appState.pins.pin(item) }
+                }
+                Button(L10n("card.saveAs")) {
+                    appState.hidePanel()
+                    Task { await ImageExporter.saveAs(item) }
+                }
             }
 
             if item.savedFilePath != nil {
@@ -310,6 +321,22 @@ struct ClipCardView: View {
             return item.imagePath ?? ""
         case .file:
             return item.filePathsArray.first ?? ""
+        }
+    }
+}
+
+// MARK: - Drag
+
+/// Images are dragged as PNG files; everything else as text.
+private struct ClipDragModifier: ViewModifier {
+    let item: ClipItem
+    let textPayload: String
+
+    func body(content: Content) -> some View {
+        if item.contentType == .image {
+            content.draggable(ClipImageTransferable(item: item))
+        } else {
+            content.draggable(textPayload)
         }
     }
 }

@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 @MainActor
 enum ImageExporter {
     /// The folder copy's name when there is one, otherwise "Screenshot 2026-09-23 at 14.05.12.png".
-    static func suggestedFilename(for item: ClipItem) -> String {
+    nonisolated static func suggestedFilename(for item: ClipItem) -> String {
         if let path = item.savedFilePath {
             return URL(fileURLWithPath: path).lastPathComponent
         }
