@@ -1,4 +1,8 @@
+import AppKit
 import CoreGraphics
+import CoreImage
+import CoreImage.CIFilterBuiltins
+import CoreText
 import Foundation
 import ImageIO
 import UniformTypeIdentifiers
@@ -37,4 +41,42 @@ enum TestImages {
 
     static func png(width: Int = 4, height: Int = 3) -> Data { encoded(.png, width: width, height: height) }
     static func tiff(width: Int = 4, height: Int = 3) -> Data { encoded(.tiff, width: width, height: height) }
+
+    /// Black text on white, large enough for Vision.
+    static func text(_ string: String, width: Int = 900, height: Int = 200, fontSize: CGFloat = 56) -> CGImage {
+        let context = CGContext(
+            data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        )!
+        context.setFillColor(red: 1, green: 1, blue: 1, alpha: 1)
+        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        let line = CTLineCreateWithAttributedString(NSAttributedString(
+            string: string,
+            attributes: [.font: NSFont.systemFont(ofSize: fontSize)]
+        ))
+        context.textPosition = CGPoint(x: 30, y: CGFloat(height) / 2 - fontSize / 3)
+        CTLineDraw(line, context)
+        return context.makeImage()!
+    }
+
+    static func qrCode(_ message: String) -> CGImage {
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data(message.utf8)
+        let image = filter.outputImage!.transformed(by: CGAffineTransform(scaleX: 12, y: 12))
+        // Quiet zone around the code
+        let padded = image.composited(over: CIImage(color: .white).cropped(to: image.extent.insetBy(dx: -40, dy: -40)))
+        return CIContext().createCGImage(padded, from: padded.extent)!
+    }
+
+    static func blank(width: Int = 400, height: Int = 200) -> CGImage {
+        let context = CGContext(
+            data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        )!
+        context.setFillColor(red: 1, green: 1, blue: 1, alpha: 1)
+        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        return context.makeImage()!
+    }
 }
