@@ -225,3 +225,7 @@
 "error.export.decode" = "Data reading error: %@";
 "error.export.importTitle" = "Import Board";
 "error.export.importAllTitle" = "Import Boards";
+
+/* Screenshots */
+"screenshot.filename.prefix" = "Screenshot";
+"screenshot.filename.at" = "at";

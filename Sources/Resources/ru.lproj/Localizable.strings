@@ -225,3 +225,7 @@
 "error.export.decode" = "Ошибка чтения данных: %@";
 "error.export.importTitle" = "Импортировать доску";
 "error.export.importAllTitle" = "Импортировать доски";
+
+/* Screenshots */
+"screenshot.filename.prefix" = "Снимок экрана";
+"screenshot.filename.at" = "в";

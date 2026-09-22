@@ -40,4 +40,35 @@ enum ImageEncoder {
 
         return NormalizedImage(pngData: output as Data, pixelWidth: width, pixelHeight: height)
     }
+
+    /// Encodes a capture as PNG with DPI = 72 × `pointScale`, so Preview and other apps show a
+    /// Retina capture at its on-screen point size. `downscaleToOneX` stores one pixel per point.
+    static func pngData(from image: CGImage, pointScale: CGFloat, downscaleToOneX: Bool) -> Data? {
+        var output = image
+        var scale = pointScale
+        if downscaleToOneX, pointScale > 1 {
+            let width = max(1, Int((CGFloat(image.width) / pointScale).rounded()))
+            let height = max(1, Int((CGFloat(image.height) / pointScale).rounded()))
+            let colorSpace = image.colorSpace.flatMap { $0.model == .rgb ? $0 : nil }
+                ?? CGColorSpace(name: CGColorSpace.sRGB)!
+            guard let context = CGContext(
+                data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+                space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ) else { return nil }
+            context.interpolationQuality = .high
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            guard let scaled = context.makeImage() else { return nil }
+            output = scaled
+            scale = 1
+        }
+
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil)
+        else { return nil }
+        let dpi = 72 * scale
+        let properties: [CFString: Any] = [kCGImagePropertyDPIWidth: dpi, kCGImagePropertyDPIHeight: dpi]
+        CGImageDestinationAddImage(destination, output, properties as CFDictionary)
+        guard CGImageDestinationFinalize(destination) else { return nil }
+        return data as Data
+    }
 }

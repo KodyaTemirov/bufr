@@ -225,3 +225,7 @@
 "error.export.decode" = "Ma'lumotlarni o'qish xatoligi: %@";
 "error.export.importTitle" = "Doskani import qilish";
 "error.export.importAllTitle" = "Doskalarni import qilish";
+
+/* Screenshots */
+"screenshot.filename.prefix" = "Skrinshot";
+"screenshot.filename.at" = "soat";
