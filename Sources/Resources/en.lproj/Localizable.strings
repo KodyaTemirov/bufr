@@ -286,3 +286,5 @@
 "toast.copied" = "Copied";
 "toast.saved" = "Saved";
 "card.pin" = "Pin to Screen";
+"quickAccess.closeAll" = "Close All";
+"toast.savedToFallback" = "Saved to “%@”: the chosen folder is unavailable";

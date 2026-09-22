@@ -286,3 +286,5 @@
 "toast.copied" = "Скопировано";
 "toast.saved" = "Сохранено";
 "card.pin" = "Закрепить на экране";
+"quickAccess.closeAll" = "Закрыть все";
+"toast.savedToFallback" = "Сохранено в «%@»: выбранная папка недоступна";

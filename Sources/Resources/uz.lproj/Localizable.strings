@@ -286,3 +286,5 @@
 "toast.copied" = "Nusxalandi";
 "toast.saved" = "Saqlandi";
 "card.pin" = "Ekranga qadash";
+"quickAccess.closeAll" = "Barchasini yopish";
+"toast.savedToFallback" = "«%@» ga saqlandi: tanlangan jild mavjud emas";

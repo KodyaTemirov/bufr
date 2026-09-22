@@ -13,6 +13,8 @@ final class CaptureSessionController {
         var windowShadow: Bool
         var showMagnifier: Bool
         var previousArea: CaptureRegion?
+        /// Bufr windows that belong in the capture (pinned screenshots)
+        var keptWindowIDs: [CGWindowID] = []
     }
 
     private(set) var isActive = false
@@ -38,7 +40,7 @@ final class CaptureSessionController {
             guard let displayID = DisplayInfo.screenUnderMouse()?.displayID else {
                 throw ScreenCaptureService.CaptureError.displayNotFound
             }
-            let capture = try await service.captureDisplay(displayID, content: content, showsCursor: options.showsCursor)
+            let capture = try await service.captureDisplay(displayID, content: content, showsCursor: options.showsCursor, keptWindowIDs: options.keptWindowIDs)
             return CaptureOutcome(
                 image: capture.image, pointScale: capture.pointScale,
                 sourceAppId: frontmost?.bundleIdentifier, sourceAppName: frontmost?.localizedName,
@@ -49,7 +51,7 @@ final class CaptureSessionController {
             if let region = options.previousArea,
                let displayID = DisplayInfo.displayID(forUUID: region.displayUUID),
                let screen = DisplayInfo.screen(for: displayID) {
-                let capture = try await service.captureDisplay(displayID, content: content, showsCursor: false)
+                let capture = try await service.captureDisplay(displayID, content: content, showsCursor: false, keptWindowIDs: options.keptWindowIDs)
                 guard let image = ScreenCaptureService.crop(capture.image, localRect: region.localRect, displayPointSize: screen.frame.size)
                 else { return nil }
                 return CaptureOutcome(
@@ -87,7 +89,7 @@ final class CaptureSessionController {
         for screen in NSScreen.screens {
             guard let displayID = screen.displayID else { continue }
             do {
-                frames[displayID] = try await service.captureDisplay(displayID, content: content, showsCursor: false)
+                frames[displayID] = try await service.captureDisplay(displayID, content: content, showsCursor: false, keptWindowIDs: options.keptWindowIDs)
             } catch {
                 logger.error("Display \(displayID) not captured: \(error.localizedDescription, privacy: .public)")
                 lastError = error

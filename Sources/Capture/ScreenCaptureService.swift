@@ -22,12 +22,19 @@ final class ScreenCaptureService {
         try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
     }
 
-    func captureDisplay(_ displayID: CGDirectDisplayID, content: SCShareableContent, showsCursor: Bool) async throws -> Capture {
+    /// `keptWindowIDs` are Bufr windows that stay in the image (pinned screenshots).
+    func captureDisplay(
+        _ displayID: CGDirectDisplayID,
+        content: SCShareableContent,
+        showsCursor: Bool,
+        keptWindowIDs: [CGWindowID] = []
+    ) async throws -> Capture {
         guard let display = content.displays.first(where: { $0.displayID == displayID }) else {
             throw CaptureError.displayNotFound
         }
         let ownApp = content.applications.filter { $0.processID == getpid() }
-        let filter = SCContentFilter(display: display, excludingApplications: ownApp, exceptingWindows: [])
+        let kept = content.windows.filter { keptWindowIDs.contains($0.windowID) }
+        let filter = SCContentFilter(display: display, excludingApplications: ownApp, exceptingWindows: kept)
         let configuration = SCScreenshotConfiguration()
         configuration.showsCursor = showsCursor
         return try await capture(filter: filter, configuration: configuration)

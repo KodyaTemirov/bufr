@@ -25,6 +25,7 @@ final class AppState {
     let screenshots: ScreenshotCoordinator
     let pins: ScreenPinManager
     let quickAccess: QuickAccessController
+    private var quickAccessPresenter: QuickAccessPresenter?
     var updater: AppUpdater
 
     // MARK: - UI State
@@ -155,6 +156,28 @@ final class AppState {
         pins.onCopy = { [weak self] item in
             self?.copyItem(item)
         }
+        screenshots.keptWindowIDs = { [weak self] in
+            self?.pins.windowIDs ?? []
+        }
+        screenshots.onCaptured = { [weak self] item, outcome in
+            self?.showAfterCapture(item, outcome: outcome)
+        }
+        quickAccessPresenter = QuickAccessPresenter(
+            controller: quickAccess,
+            settings: screenshotSettings,
+            actions: QuickAccessActions(
+                copy: { [weak self] item in
+                    self?.copyItem(item)
+                    ToastPresenter.show(L10n("toast.copied"))
+                },
+                pin: { [weak self] entry in
+                    Task { await self?.pins.pin(entry.item, sourceRect: entry.sourceRect) }
+                },
+                reveal: { [weak self] item in
+                    self?.screenshots.revealInFinder(item)
+                }
+            )
+        )
 
         // Panel close callback
         panelManager.onPanelClose = { [weak self] in
@@ -261,6 +284,27 @@ final class AppState {
             try clipItemStore.fetchItems()
         } catch {
             logger.error("Failed to delete item: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    // MARK: - Screenshots
+
+    private func showAfterCapture(_ item: ClipItem, outcome: CaptureOutcome) {
+        switch screenshotSettings.afterCapture {
+        case .quickAccess:
+            let pointSize = CGSize(
+                width: CGFloat(outcome.image.width) / outcome.pointScale,
+                height: CGFloat(outcome.image.height) / outcome.pointScale
+            )
+            quickAccessPresenter?.show(QuickAccessEntry(
+                item: item,
+                thumbnail: NSImage(cgImage: outcome.image, size: pointSize),
+                sourceRect: outcome.screenRect
+            ))
+        case .pin:
+            Task { await pins.pin(item, sourceRect: outcome.screenRect) }
+        case .nothing:
+            break
         }
     }
 

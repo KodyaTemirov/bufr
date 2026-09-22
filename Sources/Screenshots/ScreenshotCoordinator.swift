@@ -16,6 +16,12 @@ final class ScreenshotCoordinator {
     var prepareForCapture: () -> Void = {}
     /// Explains how to grant Screen Recording
     var showPermissionGuide: () -> Void = {}
+    /// After-capture action (Quick Access, pin, …) for a processed capture
+    var onCaptured: (ClipItem, CaptureOutcome) -> Void = { _, _ in }
+    /// Bufr windows that stay visible in captures (pins)
+    var keptWindowIDs: () -> [CGWindowID] = { [] }
+    /// Short user-facing notices
+    var notify: (String) -> Void = { ToastPresenter.show($0, systemImage: "folder") }
 
     var isCapturing: Bool { session.isActive }
 
@@ -75,10 +81,12 @@ final class ScreenshotCoordinator {
                     showsCursor: settings.includeCursor,
                     windowShadow: settings.windowShadow,
                     showMagnifier: true,
-                    previousArea: previousAreaStore.load()
+                    previousArea: previousAreaStore.load(),
+                    keptWindowIDs: keptWindowIDs()
                 )
                 guard let outcome = try await session.capture(mode, options: options) else { return }
-                try await process(outcome)
+                let item = try await process(outcome)
+                onCaptured(item, outcome)
             } catch {
                 logger.error("Capture failed: \(error.localizedDescription, privacy: .public)")
                 if Self.isPermissionError(error) {
@@ -148,8 +156,11 @@ final class ScreenshotCoordinator {
         } catch {
             logger.error("Saving to \(self.settings.saveFolder.path, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
             // The chosen folder was removed or is not writable: keep the file anyway
-            guard settings.saveFolder.standardizedFileURL != fallbackFolder.standardizedFileURL else { return nil }
-            return try? ScreenshotFileWriter.write(png, to: fallbackFolder, baseName: baseName)
+            guard settings.saveFolder.standardizedFileURL != fallbackFolder.standardizedFileURL,
+                  let url = try? ScreenshotFileWriter.write(png, to: fallbackFolder, baseName: baseName)
+            else { return nil }
+            notify(L10n("toast.savedToFallback", fallbackFolder.lastPathComponent))
+            return url
         }
     }
 
