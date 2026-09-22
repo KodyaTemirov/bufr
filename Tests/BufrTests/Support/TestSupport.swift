@@ -79,4 +79,23 @@ enum TestImages {
         context.fill(CGRect(x: 0, y: 0, width: width, height: height))
         return context.makeImage()!
     }
+
+    /// RGBA of a pixel addressed with a top-left origin.
+    static func pixel(_ image: CGImage, _ x: Int, _ y: Int) -> [UInt8] {
+        let width = image.width, height = image.height
+        var data = [UInt8](repeating: 0, count: width * height * 4)
+        let context = CGContext(
+            data: &data, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        )!
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        let offset = (y * width + x) * 4 // bitmap memory starts with the top row
+        return Array(data[offset..<offset + 4])
+    }
+
+    static func decode(_ data: Data) -> CGImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        return CGImageSourceCreateImageAtIndex(source, 0, nil)
+    }
 }

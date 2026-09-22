@@ -41,6 +41,15 @@ enum ImageEncoder {
         return NormalizedImage(pngData: output as Data, pixelWidth: width, pixelHeight: height)
     }
 
+    /// Pixels per point stored in the image's DPI (144 DPI → 2); 1 when unknown.
+    static func pointScale(of data: Data) -> CGFloat {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let dpi = (properties[kCGImagePropertyDPIWidth] as? NSNumber)?.doubleValue, dpi > 0
+        else { return 1 }
+        return max(1, CGFloat(dpi) / 72)
+    }
+
     /// Encodes a capture as PNG with DPI = 72 × `pointScale`, so Preview and other apps show a
     /// Retina capture at its on-screen point size. `downscaleToOneX` stores one pixel per point.
     static func pngData(from image: CGImage, pointScale: CGFloat, downscaleToOneX: Bool) -> Data? {

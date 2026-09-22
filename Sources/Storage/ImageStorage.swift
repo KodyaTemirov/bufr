@@ -86,6 +86,30 @@ actor ImageStorage {
         return image
     }
 
+    // MARK: - Editor files
+
+    /// Writes a file next to the images (editor layers, the untouched original).
+    func writeFile(_ data: Data, named filename: String) throws {
+        guard isValidFilename(filename) else { throw CocoaError(.fileWriteInvalidFileName) }
+        let url = imagesDir.appendingPathComponent(filename)
+        try data.write(to: url, options: .atomic)
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+    }
+
+    func removeFile(named filename: String) {
+        guard isValidFilename(filename) else { return }
+        try? FileManager.default.removeItem(at: imagesDir.appendingPathComponent(filename))
+    }
+
+    /// Replaces an image in place (after editing) and rebuilds its thumbnail before returning,
+    /// so cards reloading right after see the new picture.
+    func replaceImage(_ data: Data, filename: String, thumbnailId: UUID) async throws {
+        try writeFile(data, named: filename)
+        await pendingThumbnails[thumbnailId]?.value
+        Self.generateThumbnailSync(from: data, id: thumbnailId, thumbnailsDir: thumbnailsDir)
+        thumbnailCache.removeObject(forKey: thumbnailId.uuidString as NSString)
+    }
+
     // MARK: - Delete
 
     /// Removes an item's image and thumbnail. Rows created before 3.0 used a different UUID
@@ -99,11 +123,19 @@ actor ImageStorage {
             }
         }
         for id in ids {
+            // Editor layers and the untouched original
+            for name in Self.editorFileNames(for: id) {
+                try? FileManager.default.removeItem(at: imagesDir.appendingPathComponent(name))
+            }
             // A thumbnail still being generated would otherwise be written after this delete
             await pendingThumbnails[id]?.value
             try? FileManager.default.removeItem(at: thumbnailsDir.appendingPathComponent("\(id.uuidString)_thumb.png"))
             thumbnailCache.removeObject(forKey: id.uuidString as NSString)
         }
+    }
+
+    nonisolated static func editorFileNames(for id: UUID) -> [String] {
+        ["\(id.uuidString)_orig.png", "\(id.uuidString).annotations.json"]
     }
 
     /// "<uuid>.png" → uuid

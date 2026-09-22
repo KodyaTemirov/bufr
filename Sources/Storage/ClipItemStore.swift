@@ -246,6 +246,38 @@ final class ClipItemStore {
         updateItemInPlace(updated)
     }
 
+    /// After editing an image: new flattened content, so hash, size and layers change; the
+    /// OCR text is cleared for re-recognition and the item moves to the top. Other columns
+    /// (title, favourites, …) are left alone.
+    @discardableResult
+    func applyEdit(id: UUID, hash: String, annotationPath: String?, pixelWidth: Int, pixelHeight: Int) throws -> ClipItem {
+        let updated = try database.dbQueue.write { db -> ClipItem in
+            try ClipItem
+                .filter(key: id)
+                .updateAll(db, [
+                    ClipItem.Columns.hash.set(to: hash),
+                    ClipItem.Columns.annotationPath.set(to: annotationPath),
+                    ClipItem.Columns.pixelWidth.set(to: pixelWidth),
+                    ClipItem.Columns.pixelHeight.set(to: pixelHeight),
+                    ClipItem.Columns.ocrText.set(to: nil),
+                    ClipItem.Columns.createdAt.set(to: Date()),
+                ])
+            return try ClipItem.find(db, key: id)
+        }
+        prependItem(updated)
+        return updated
+    }
+
+    @discardableResult
+    func clearAnnotationPath(id: UUID) throws -> ClipItem {
+        let updated = try database.dbQueue.write { db -> ClipItem in
+            try ClipItem.filter(key: id).updateAll(db, ClipItem.Columns.annotationPath.set(to: nil))
+            return try ClipItem.find(db, key: id)
+        }
+        updateItemInPlace(updated)
+        return updated
+    }
+
     // MARK: - In-place update
 
     private func updateItemInPlace(_ updated: ClipItem) {

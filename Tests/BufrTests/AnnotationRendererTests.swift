@@ -2,19 +2,7 @@ import CoreGraphics
 import Testing
 @testable import Bufr
 
-/// RGBA of a pixel addressed with a top-left origin.
-private func pixel(_ image: CGImage, _ x: Int, _ y: Int) -> [UInt8] {
-    let width = image.width, height = image.height
-    var data = [UInt8](repeating: 0, count: width * height * 4)
-    let context = CGContext(
-        data: &data, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
-        space: CGColorSpace(name: CGColorSpace.sRGB)!,
-        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-    )!
-    context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
-    let offset = (y * width + x) * 4 // bitmap memory starts with the top row
-    return Array(data[offset..<offset + 4])
-}
+private func pixel(_ image: CGImage, _ x: Int, _ y: Int) -> [UInt8] { TestImages.pixel(image, x, y) }
 
 private func isRed(_ rgba: [UInt8]) -> Bool { rgba[0] > 200 && rgba[1] < 90 && rgba[2] < 90 }
 private func isWhite(_ rgba: [UInt8]) -> Bool { rgba[0] > 245 && rgba[1] > 245 && rgba[2] > 245 }
