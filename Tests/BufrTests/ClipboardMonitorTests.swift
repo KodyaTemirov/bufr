@@ -42,6 +42,14 @@ struct ClipboardMonitorTests {
         #expect(store.items.isEmpty)
     }
 
+    @Test func ignoresBufrOwnWrites() {
+        PasteboardWriter.writeText("written by bufr", to: pasteboard)
+
+        monitor.checkForChanges()
+
+        #expect(store.items.isEmpty)
+    }
+
     @Test func unchangedPasteboardIsIgnored() {
         pasteboard.clearContents()
         pasteboard.setString("once", forType: .string)

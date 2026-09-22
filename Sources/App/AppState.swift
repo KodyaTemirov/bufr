@@ -196,6 +196,7 @@ final class AppState {
 
     func pasteItem(_ item: ClipItem, asPlainText: Bool = false) {
         hidePanel()
+        bringToTop(item)
 
         let plainText = asPlainText || alwaysPastePlainText
 
@@ -206,6 +207,22 @@ final class AppState {
             }
         case .clipboard:
             clipboardPaster.copyToClipboard(item, asPlainText: plainText)
+        }
+    }
+
+    /// Copy without pasting (card context menu, menu bar list).
+    func copyItem(_ item: ClipItem) {
+        clipboardPaster.copyToClipboard(item)
+        bringToTop(item)
+    }
+
+    /// Bufr's own pasteboard writes are not re-captured by the monitor,
+    /// so a reused item is moved to the top explicitly.
+    private func bringToTop(_ item: ClipItem) {
+        do {
+            try clipItemStore.touch(item)
+        } catch {
+            logger.error("Failed to move item to top: \(error.localizedDescription, privacy: .public)")
         }
     }
 

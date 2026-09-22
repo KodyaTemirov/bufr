@@ -54,6 +54,11 @@ final class ClipboardMonitor {
         guard currentCount != lastChangeCount else { return }
         lastChangeCount = currentCount
 
+        // Bufr's own writes (paste from history, screenshots) are already in history
+        if pasteboard.types?.contains(.bufrSelfWrite) == true {
+            return
+        }
+
         // Check for concealed/sensitive content
         if ExclusionManager.containsConcealedContent(pasteboard) {
             return

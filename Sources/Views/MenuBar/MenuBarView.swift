@@ -23,7 +23,7 @@ struct MenuBarView: View {
             } else {
                 ForEach(Array(menuItems.enumerated()), id: \.element.id) { index, item in
                     MenuBarItemRow(item: item, shortcutIndex: index < 9 ? index + 1 : nil) {
-                        copyToClipboard(item)
+                        AppState.shared.copyItem(item)
                     }
                 }
             }
@@ -71,15 +71,6 @@ struct MenuBarView: View {
         }
         .onAppear {
             menuItems = Array(AppState.shared.clipItemStore.items.prefix(10))
-        }
-    }
-
-    private func copyToClipboard(_ item: ClipItem) {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-
-        if let text = item.textContent {
-            pasteboard.setString(text, forType: .string)
         }
     }
 }

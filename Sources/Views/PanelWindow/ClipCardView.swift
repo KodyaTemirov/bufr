@@ -128,7 +128,7 @@ struct ClipCardView: View {
             }
 
             Button(L10n("card.copy")) {
-                appState.clipboardPaster.copyToClipboard(item)
+                appState.copyItem(item)
             }
 
             Button(L10n("card.rename")) {
