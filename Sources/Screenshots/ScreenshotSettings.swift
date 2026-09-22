@@ -32,6 +32,7 @@ final class ScreenshotSettings {
         static let afterCapture = "screenshotAfterCapture"
         static let quickAccessPosition = "screenshotQuickAccessPosition"
         static let quickAccessAutoClose = "screenshotQuickAccessAutoClose"
+        static let ocrIndexingEnabled = "screenshotOCRIndexingEnabled"
     }
 
     /// Seconds before a Quick Access card closes itself; 0 = never
@@ -75,6 +76,11 @@ final class ScreenshotSettings {
         didSet { defaults.set(quickAccessAutoClose, forKey: Keys.quickAccessAutoClose) }
     }
 
+    /// Recognize text in all history images so search finds words inside them
+    var ocrIndexingEnabled: Bool {
+        didSet { defaults.set(ocrIndexingEnabled, forKey: Keys.ocrIndexingEnabled) }
+    }
+
     var filenamePrefix: String {
         let custom = customFilenamePrefix?.trimmingCharacters(in: .whitespaces) ?? ""
         return custom.isEmpty ? L10n("screenshot.filename.prefix") : custom
@@ -93,6 +99,7 @@ final class ScreenshotSettings {
         afterCapture = AfterCaptureAction(rawValue: defaults.string(forKey: Keys.afterCapture) ?? "") ?? .quickAccess
         quickAccessPosition = QuickAccessPosition(rawValue: defaults.string(forKey: Keys.quickAccessPosition) ?? "") ?? .bottomLeft
         quickAccessAutoClose = defaults.object(forKey: Keys.quickAccessAutoClose) as? Int ?? 10
+        ocrIndexingEnabled = defaults.object(forKey: Keys.ocrIndexingEnabled) as? Bool ?? true
     }
 
     func resetSaveFolder() {

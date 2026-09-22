@@ -87,4 +87,14 @@ struct ClipIngestorTests {
         #expect(store.items.map(\.id) == [first.id])
         #expect(first.origin == .clipboard)
     }
+
+    @Test func newImagesAreReportedForTextRecognition() async throws {
+        var reported: [UUID] = []
+        ingestor.onImageIngested = { reported.append($0) }
+
+        let first = try await ingestor.ingestImage(.init(data: TestImages.png(width: 11, height: 3), origin: .clipboard))
+        _ = try await ingestor.ingestImage(.init(data: TestImages.png(width: 11, height: 3), origin: .clipboard)) // duplicate
+
+        #expect(reported == [first.id])
+    }
 }

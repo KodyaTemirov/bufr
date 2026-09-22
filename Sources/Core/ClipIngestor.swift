@@ -27,6 +27,9 @@ final class ClipIngestor {
         case unreadableImage
     }
 
+    /// New image rows (not duplicates) — the OCR indexer picks them up first
+    var onImageIngested: (UUID) -> Void = { _ in }
+
     private let store: ClipItemStore
     private let imageStorage: ImageStorage
 
@@ -79,6 +82,8 @@ final class ClipIngestor {
         if saved.id != item.id {
             // Another ingest stored the same content while this one was encoding
             await imageStorage.deleteAssets(imagePath: filename, itemId: item.id)
+        } else {
+            onImageIngested(saved.id)
         }
         store.prependItem(saved)
         return saved

@@ -101,6 +101,7 @@ struct ScreenshotSettingsTests {
         #expect(!settings.includeCursor)
         #expect(!settings.retinaAtOneX)
         #expect(settings.customFilenamePrefix == nil)
+        #expect(settings.ocrIndexingEnabled)
     }
 
     @Test func afterCaptureDefaults() {

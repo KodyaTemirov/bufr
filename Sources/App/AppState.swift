@@ -25,6 +25,7 @@ final class AppState {
     let screenshots: ScreenshotCoordinator
     let pins: ScreenPinManager
     let quickAccess: QuickAccessController
+    let ocrIndexer: OCRIndexer
     private var quickAccessPresenter: QuickAccessPresenter?
     var updater: AppUpdater
 
@@ -117,6 +118,7 @@ final class AppState {
             store: clipItemStore
         )
         self.pins = ScreenPinManager()
+        self.ocrIndexer = OCRIndexer(repository: OCRRepository(database: database), imageStorage: .shared)
         self.quickAccess = QuickAccessController(autoCloseDelay: { [screenshotSettings] in
             let seconds = screenshotSettings.quickAccessAutoClose
             return seconds > 0 ? .seconds(seconds) : nil
@@ -156,6 +158,10 @@ final class AppState {
         pins.onCopy = { [weak self] item in
             self?.copyItem(item)
         }
+        clipIngestor.onImageIngested = { [ocrIndexer] id in
+            Task { await ocrIndexer.enqueue(id) }
+        }
+        startTextIndexing()
         screenshots.keptWindowIDs = { [weak self] in
             self?.pins.windowIDs ?? []
         }
@@ -284,6 +290,22 @@ final class AppState {
             try clipItemStore.fetchItems()
         } catch {
             logger.error("Failed to delete item: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    // MARK: - Text recognition
+
+    private func startTextIndexing() {
+        let indexer = ocrIndexer
+        guard screenshotSettings.ocrIndexingEnabled else {
+            Task { await indexer.setEnabled(false) }
+            return
+        }
+        // Let launch finish first; then warm up Vision and work through older images
+        Task(priority: .utility) {
+            try? await Task.sleep(for: .seconds(10))
+            await indexer.warmUp()
+            await indexer.startBackfill()
         }
     }
 
