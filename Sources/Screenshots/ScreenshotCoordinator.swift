@@ -1,5 +1,6 @@
 import AppKit
 import OSLog
+import ScreenCaptureKit
 
 private let logger = Logger(subsystem: "com.bufr.app", category: "Screenshots")
 
@@ -80,9 +81,20 @@ final class ScreenshotCoordinator {
                 try await process(outcome)
             } catch {
                 logger.error("Capture failed: \(error.localizedDescription, privacy: .public)")
-                NSSound.beep()
+                if Self.isPermissionError(error) {
+                    showPermissionGuide()
+                } else {
+                    NSSound.beep()
+                }
             }
         }
+    }
+
+    /// macOS refused the capture (e.g. the periodic consent alert was declined) even though the
+    /// Screen Recording switch is on.
+    nonisolated static func isPermissionError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        return nsError.domain == SCStreamErrorDomain && nsError.code == SCStreamError.Code.userDeclined.rawValue
     }
 
     // MARK: - Pipeline

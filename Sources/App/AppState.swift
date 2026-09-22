@@ -261,6 +261,9 @@ final class AppState {
         if screenshots.isCapturing && action.group != .screenshots {
             return
         }
+        if action.group == .screenshots && !hotKeyManager.confirmStillOwned(action) {
+            return // macOS handles this combo again
+        }
 
         switch action {
         case .togglePanel:

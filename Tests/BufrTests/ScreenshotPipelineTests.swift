@@ -1,4 +1,5 @@
 import AppKit
+import ScreenCaptureKit
 import Testing
 @testable import Bufr
 
@@ -90,5 +91,12 @@ struct ScreenshotPipelineTests {
         #expect(store.items.first?.id == item.id)
         let saved = try #require(item.savedFilePath)
         #expect(saved.hasPrefix(fallbackFolder.path))
+    }
+
+    @Test func declinedConsentCountsAsPermissionError() {
+        let declined = NSError(domain: SCStreamErrorDomain, code: SCStreamError.Code.userDeclined.rawValue)
+
+        #expect(ScreenshotCoordinator.isPermissionError(declined))
+        #expect(!ScreenshotCoordinator.isPermissionError(NSError(domain: NSCocoaErrorDomain, code: 4)))
     }
 }

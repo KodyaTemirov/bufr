@@ -112,6 +112,13 @@ struct ClipPanelView: View {
             performSearch()
             selectedIndex = 0
         }
+        .onChange(of: appState.isPanelVisible) { _, visible in
+            // Captures happen while the panel is hidden; pick them up when it reappears
+            if visible && showingScreenshots {
+                reloadScreenshots()
+                performSearch()
+            }
+        }
         .onChange(of: appState.clipItemStore.items) {
             guard appState.isPanelVisible else { return }
             if showingScreenshots {
@@ -602,7 +609,7 @@ struct ClipPanelView: View {
             return ("magnifyingglass", L10n("panel.empty.noResults"), L10n("panel.empty.noResults.hint"))
         }
         if showingScreenshots {
-            let hint = appState.hotKeyManager.bindings[.captureArea].map {
+            let hint = appState.hotKeyManager.activeBinding(for: .captureArea).map {
                 L10n("panel.empty.screenshots.hint", $0.displayString)
             } ?? L10n("panel.empty.screenshots.hintNoShortcut")
             return ("camera.viewfinder", L10n("panel.empty.screenshots"), hint)

@@ -62,6 +62,19 @@ final class HotKeyManager {
         hotKeys[action] != nil
     }
 
+    /// The combo that currently triggers `action` in Bufr: nil when unset or owned by macOS.
+    func activeBinding(for action: HotKeyAction) -> HotKeyBinding? {
+        blockedBySystem.contains(action) ? nil : bindings[action]
+    }
+
+    /// Re-reads macOS shortcuts right before acting on a press. If the user turned the macOS
+    /// screenshot shortcut back on, both would fire; Bufr steps aside instead.
+    @discardableResult
+    func confirmStillOwned(_ action: HotKeyAction) -> Bool {
+        recheckSystemConflicts()
+        return !blockedBySystem.contains(action)
+    }
+
     /// The other action already bound to `binding`, if any.
     func action(using binding: HotKeyBinding, excluding action: HotKeyAction) -> HotKeyAction? {
         bindings.first { $0.key != action && $0.value == binding }?.key
@@ -113,11 +126,13 @@ final class HotKeyManager {
             conflictTimer?.invalidate()
             conflictTimer = nil
         } else if conflictTimer == nil {
-            conflictTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
+            let timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
                 MainActor.assumeIsolated {
                     self?.recheckSystemConflicts()
                 }
             }
+            timer.tolerance = 3
+            conflictTimer = timer
         }
     }
 }

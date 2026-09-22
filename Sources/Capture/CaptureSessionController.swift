@@ -21,7 +21,7 @@ final class CaptureSessionController {
     private var overlayWindows: [CaptureOverlayWindow] = []
     private var overlayViews: [CaptureOverlayView] = []
     private var continuation: CheckedContinuation<CaptureSelection?, Never>?
-    private var observers: [NSObjectProtocol] = []
+    private var observers: [(center: NotificationCenter, token: NSObjectProtocol)] = []
     private var previousArea: CaptureRegion?
 
     /// Returns nil when the user cancels.
@@ -79,11 +79,21 @@ final class CaptureSessionController {
         options: Options,
         frontmost: NSRunningApplication?
     ) async throws -> CaptureOutcome? {
-        // Freeze every display before any overlay exists: the overlay shows exactly this image
+        // Freeze every display before any overlay exists: the overlay shows exactly this image.
+        // A display ScreenCaptureKit can't read (some virtual/DisplayLink ones) is skipped, not fatal.
         var frames: [CGDirectDisplayID: ScreenCaptureService.Capture] = [:]
+        var lastError: Error?
         for screen in NSScreen.screens {
             guard let displayID = screen.displayID else { continue }
-            frames[displayID] = try await service.captureDisplay(displayID, content: content, showsCursor: false)
+            do {
+                frames[displayID] = try await service.captureDisplay(displayID, content: content, showsCursor: false)
+            } catch {
+                logger.error("Display \(displayID) not captured: \(error.localizedDescription, privacy: .public)")
+                lastError = error
+            }
+        }
+        if frames.isEmpty {
+            throw lastError ?? ScreenCaptureService.CaptureError.displayNotFound
         }
         let windows = WindowListProvider.snapshot()
         previousArea = options.previousArea
@@ -165,12 +175,29 @@ final class CaptureSessionController {
     private func observeCancellation() {
         let center = NotificationCenter.default
         for name in [NSApplication.didResignActiveNotification, NSApplication.didChangeScreenParametersNotification] {
-            observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+            let token = center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated {
                     self?.cancel()
                 }
-            })
+            }
+            observers.append((center, token))
         }
+
+        // macOS may refuse to activate Bufr (cooperative activation); then ⌘Tab never makes it
+        // resign active, so watch for any other app becoming active instead
+        let workspaceCenter = NSWorkspace.shared.notificationCenter
+        let token = workspaceCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] notification in
+            let activated = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+            let isOtherApp = activated?.processIdentifier != ProcessInfo.processInfo.processIdentifier
+            MainActor.assumeIsolated {
+                if isOtherApp {
+                    self?.cancel()
+                }
+            }
+        }
+        observers.append((workspaceCenter, token))
     }
 
     private func finish(_ selection: CaptureSelection?) {
@@ -180,7 +207,9 @@ final class CaptureSessionController {
     }
 
     private func tearDown() {
-        observers.forEach(NotificationCenter.default.removeObserver)
+        for observer in observers {
+            observer.center.removeObserver(observer.token)
+        }
         observers = []
         for window in overlayWindows {
             window.orderOut(nil)

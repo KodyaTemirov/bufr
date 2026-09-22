@@ -100,9 +100,7 @@ struct MenuBarView: View {
 
     /// A shortcut macOS still owns would be misleading next to the item
     private func menuShortcut(for action: HotKeyAction) -> KeyboardShortcut? {
-        let manager = appState.hotKeyManager
-        guard !manager.blockedBySystem.contains(action) else { return nil }
-        return manager.bindings[action]?.keyboardShortcut
+        appState.hotKeyManager.activeBinding(for: action)?.keyboardShortcut
     }
 }
 

@@ -107,4 +107,26 @@ struct HotKeyManagerConflictTests {
         #expect(manager.bindings[.capturePreviousArea] == nil)
         recording.stop()
     }
+
+    @Test func activeBindingHidesComboOwnedByMacOS() {
+        system.combos = [rareCombo]
+        manager.setBinding(rareCombo, for: .captureWindow)
+        #expect(manager.activeBinding(for: .captureWindow) == nil)
+
+        system.combos = []
+        manager.recheckSystemConflicts()
+        #expect(manager.activeBinding(for: .captureWindow) == rareCombo)
+        manager.setBinding(nil, for: .captureWindow)
+    }
+
+    /// The user turned the macOS shortcut back on: Bufr steps aside instead of both firing.
+    @Test func stepsAsideWhenMacOSTakesComboBack() {
+        manager.setBinding(rareCombo, for: .captureWindow)
+        #expect(manager.isRegistered(.captureWindow))
+
+        system.combos = [rareCombo]
+
+        #expect(manager.confirmStillOwned(.captureWindow) == false)
+        #expect(!manager.isRegistered(.captureWindow))
+    }
 }

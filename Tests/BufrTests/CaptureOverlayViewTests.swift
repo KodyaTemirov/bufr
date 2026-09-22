@@ -88,4 +88,42 @@ struct CaptureOverlayViewTests {
 
         #expect(spy.windowModeRequests == [true])
     }
+
+    /// A 1920×1080 display above and to the left of a 900 pt tall primary display.
+    private func makeSecondaryView(windows: [CapturableWindow], windowMode: Bool) -> CaptureOverlayView {
+        let view = CaptureOverlayView(
+            configuration: .init(
+                image: TestImages.cgImage(width: 3840, height: 2160),
+                displayID: 9,
+                screenFrame: CGRect(x: -1920, y: 900, width: 1920, height: 1080),
+                primaryHeight: 900,
+                backingScale: 2,
+                windows: windows,
+                showMagnifier: false
+            ),
+            windowMode: windowMode
+        )
+        view.delegate = spy
+        return view
+    }
+
+    @Test func secondaryDisplayWindowPick() {
+        let window = CapturableWindow(windowID: 5, frame: CGRect(x: -1900, y: -1060, width: 400, height: 300),
+                                      ownerPID: 1, ownerName: nil, title: nil)
+        let view = makeSecondaryView(windows: [window], windowMode: true)
+
+        view.mouseDown(with: mouse(.leftMouseDown, 100, 1000)) // Cocoa (-1820, 1900) = CG (-1820, -1000)
+
+        #expect(spy.selections == [.window(window)])
+    }
+
+    @Test func secondaryDisplayAreaIsDisplayLocal() {
+        let view = makeSecondaryView(windows: [], windowMode: false)
+
+        view.mouseDown(with: mouse(.leftMouseDown, 100, 1000))
+        view.mouseDragged(with: mouse(.leftMouseDragged, 300, 900))
+        view.mouseUp(with: mouse(.leftMouseUp, 300, 900))
+
+        #expect(spy.selections == [.area(displayID: 9, localRect: CGRect(x: 100, y: 80, width: 200, height: 100))])
+    }
 }
