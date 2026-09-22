@@ -66,7 +66,7 @@ final class CaptureSessionController {
             // No previous area yet, or its display is gone: let the user pick one
             return try await interactiveCapture(windowMode: false, adjustable: false, content: content, options: options, frontmost: frontmost)
 
-        case .area, .window:
+        case .area, .window, .text:
             return try await interactiveCapture(windowMode: mode == .window, adjustable: false, content: content, options: options, frontmost: frontmost)
 
         case .allInOne:

@@ -354,6 +354,8 @@ final class AppState {
             screenshots.capture(.previousArea)
         case .captureAllInOne:
             screenshots.capture(.allInOne)
+        case .captureText:
+            screenshots.capture(.text)
         }
     }
 

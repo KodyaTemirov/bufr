@@ -7,6 +7,8 @@ enum CaptureMode: Sendable, Equatable {
     case previousArea
     /// ⌘⇧5: editable selection plus a mode bar
     case allInOne
+    /// ⌘⇧2: select an area, copy the text in it
+    case text
 }
 
 /// A display-local rectangle, remembered for "Capture Previous Area".

@@ -305,3 +305,6 @@
 "screenshots.quickAccess.autoClose" = "Avtomatik yopish";
 "screenshots.quickAccess.never" = "Hech qachon";
 "screenshots.quickAccess.seconds" = "%d soniyadan keyin";
+"hotkeys.action.captureText" = "Matnni aniqlash";
+"toast.noText" = "Matn topilmadi";
+"toast.textCopied" = "%d ta belgi nusxalandi";

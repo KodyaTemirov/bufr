@@ -35,7 +35,7 @@ struct ScreenshotPipelineTests {
             pasteboard: pasteboard,
             fallbackFolder: fallbackFolder
         )
-        coordinator.notify = { _ in }
+        coordinator.notify = { _, _ in }
     }
 
     private func outcome(region: CaptureRegion? = nil) -> CaptureOutcome {

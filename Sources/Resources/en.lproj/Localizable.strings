@@ -305,3 +305,6 @@
 "screenshots.quickAccess.autoClose" = "Close automatically";
 "screenshots.quickAccess.never" = "Never";
 "screenshots.quickAccess.seconds" = "After %d s";
+"hotkeys.action.captureText" = "Capture Text";
+"toast.noText" = "No text found";
+"toast.textCopied" = "Copied %d characters";

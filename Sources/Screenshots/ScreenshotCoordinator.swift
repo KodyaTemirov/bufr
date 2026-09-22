@@ -20,8 +20,10 @@ final class ScreenshotCoordinator {
     var onCaptured: (ClipItem, CaptureOutcome) -> Void = { _, _ in }
     /// Bufr windows that stay visible in captures (pins)
     var keptWindowIDs: () -> [CGWindowID] = { [] }
-    /// Short user-facing notices
-    var notify: (String) -> Void = { ToastPresenter.show($0, systemImage: "folder") }
+    /// Short user-facing notices (message, SF Symbol)
+    var notify: (String, String) -> Void = { ToastPresenter.show($0, systemImage: $1) }
+    /// On-device text recognition for "Capture Text"
+    var ocr = OCRService()
 
     var isCapturing: Bool { session.isActive }
 
@@ -85,6 +87,10 @@ final class ScreenshotCoordinator {
                     keptWindowIDs: keptWindowIDs()
                 )
                 guard let outcome = try await session.capture(mode, options: options) else { return }
+                if mode == .text {
+                    await processTextCapture(outcome)
+                    return
+                }
                 let item = try await process(outcome)
                 onCaptured(item, outcome)
             } catch {
@@ -145,6 +151,37 @@ final class ScreenshotCoordinator {
         return item
     }
 
+    /// "Capture Text": the recognized text (or a QR code's content when there is no text) goes
+    /// to the clipboard and into history. Nothing is saved to the screenshots folder.
+    @discardableResult
+    func processTextCapture(_ outcome: CaptureOutcome) async -> String? {
+        let image = outcome.image
+        var result = (try? await ocr.recognizeText(in: image)) ?? ""
+        if result.isEmpty {
+            result = (try? await ocr.barcodePayloads(in: image))?.first ?? ""
+        }
+        guard !result.isEmpty else {
+            notify(L10n("toast.noText"), "text.magnifyingglass")
+            return nil
+        }
+
+        PasteboardWriter.writeText(result, to: pasteboard)
+        let isLink = URL(string: result).map { $0.scheme == "http" || $0.scheme == "https" } ?? false
+        do {
+            try ingestor.ingestContent(.init(
+                contentType: isLink ? .url : .text,
+                textContent: result,
+                origin: .textCapture,
+                sourceAppId: outcome.sourceAppId,
+                sourceAppName: outcome.sourceAppName
+            ))
+        } catch {
+            logger.error("Saving captured text failed: \(error.localizedDescription, privacy: .public)")
+        }
+        notify(L10n("toast.textCopied", result.count), "text.viewfinder")
+        return result
+    }
+
     private func saveToFolder(_ png: Data) -> URL? {
         let baseName = ScreenshotFilenameFormatter.baseName(
             prefix: settings.filenamePrefix,
@@ -159,7 +196,7 @@ final class ScreenshotCoordinator {
             guard settings.saveFolder.standardizedFileURL != fallbackFolder.standardizedFileURL,
                   let url = try? ScreenshotFileWriter.write(png, to: fallbackFolder, baseName: baseName)
             else { return nil }
-            notify(L10n("toast.savedToFallback", fallbackFolder.lastPathComponent))
+            notify(L10n("toast.savedToFallback", fallbackFolder.lastPathComponent), "folder")
             return url
         }
     }

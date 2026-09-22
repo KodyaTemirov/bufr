@@ -305,3 +305,6 @@
 "screenshots.quickAccess.autoClose" = "Закрывать автоматически";
 "screenshots.quickAccess.never" = "Никогда";
 "screenshots.quickAccess.seconds" = "Через %d с";
+"hotkeys.action.captureText" = "Распознать текст";
+"toast.noText" = "Текст не найден";
+"toast.textCopied" = "Скопировано символов: %d";
