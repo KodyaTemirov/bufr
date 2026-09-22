@@ -1,6 +1,5 @@
 import AppKit
 import Foundation
-import HotKey
 import OSLog
 import ServiceManagement
 import SwiftUI
@@ -68,9 +67,6 @@ final class AppState {
         didSet { UserDefaults.standard.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding") }
     }
 
-    // MARK: - Hotkey Display
-    var hotKeyDisplayString: String = "⌘⇧V"
-
     init(database: AppDatabase = .shared) {
         self.database = database
 
@@ -126,17 +122,11 @@ final class AppState {
         // Start monitoring
         clipboardMonitor.startMonitoring()
 
-        // Setup hotkey
-        hotKeyManager.onTogglePanel = { [weak self] in
-            self?.togglePanel()
+        // Setup hotkeys
+        hotKeyManager.onAction = { [weak self] action in
+            self?.perform(action)
         }
-        if let code = UserDefaults.standard.object(forKey: "hotKeyCode") as? Int,
-           let key = Key(carbonKeyCode: UInt32(code)) {
-            let mods = NSEvent.ModifierFlags(rawValue: UInt(UserDefaults.standard.integer(forKey: "hotKeyModifiers")))
-            hotKeyManager.register(key: key, modifiers: mods)
-        } else {
-            hotKeyManager.register()
-        }
+        hotKeyManager.registerAll()
 
         // Panel close callback
         panelManager.onPanelClose = { [weak self] in
@@ -264,16 +254,11 @@ final class AppState {
 
     // MARK: - Hotkey
 
-    func resetHotKey() {
-        hotKeyManager.register()
-        hotKeyDisplayString = "⌘⇧V"
-        UserDefaults.standard.removeObject(forKey: "hotKeyCode")
-        UserDefaults.standard.removeObject(forKey: "hotKeyModifiers")
-    }
-
-    func saveHotKey(key: Key, modifiers: NSEvent.ModifierFlags) {
-        UserDefaults.standard.set(Int(key.carbonKeyCode), forKey: "hotKeyCode")
-        UserDefaults.standard.set(Int(modifiers.rawValue), forKey: "hotKeyModifiers")
+    private func perform(_ action: HotKeyAction) {
+        switch action {
+        case .togglePanel:
+            togglePanel()
+        }
     }
 
     // MARK: - Launch at Login

@@ -94,10 +94,11 @@
 
 /* Hotkeys */
 "hotkeys.header" = "Global Hotkey";
-"hotkeys.openPanel" = "Open Panel";
+"hotkeys.action.togglePanel" = "Open Panel";
 "hotkeys.prompt" = "Press a key combination...";
-"hotkeys.record" = "Record New Hotkey";
+"hotkeys.none" = "Not set";
 "hotkeys.reset" = "Reset";
+"hotkeys.recorder.hint" = "Click a shortcut to change it. Esc cancels, ⌫ turns it off.";
 "hotkeys.tip.header" = "Tip";
 "hotkeys.tip.text" = "The hotkey works globally — the panel will open from any application.";
 
@@ -155,7 +156,7 @@
 "appPicker.title" = "Select Application";
 
 /* Menu Bar */
-"menubar.openPanel" = "Open Panel  ⌘⇧V";
+"menubar.openPanel" = "Open Panel";
 "menubar.historyEmpty" = "History is empty";
 "menubar.clearHistory" = "Clear History...";
 "menubar.checkUpdates" = "Check for Updates...";

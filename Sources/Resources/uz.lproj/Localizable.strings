@@ -94,10 +94,11 @@
 
 /* Hotkeys */
 "hotkeys.header" = "Global tezkor tugma";
-"hotkeys.openPanel" = "Panelni ochish";
+"hotkeys.action.togglePanel" = "Panelni ochish";
 "hotkeys.prompt" = "Tugmalar kombinatsiyasini bosing...";
-"hotkeys.record" = "Yangi tezkor tugma yozish";
+"hotkeys.none" = "Belgilanmagan";
 "hotkeys.reset" = "Tiklash";
+"hotkeys.recorder.hint" = "O‘zgartirish uchun birikmani bosing. Esc — bekor qilish, ⌫ — o‘chirish.";
 "hotkeys.tip.header" = "Maslahat";
 "hotkeys.tip.text" = "Tezkor tugma global ishlaydi — panel istalgan ilovadan ochiladi.";
 
@@ -155,7 +156,7 @@
 "appPicker.title" = "Ilovani tanlang";
 
 /* Menu Bar */
-"menubar.openPanel" = "Panelni ochish  ⌘⇧V";
+"menubar.openPanel" = "Panelni ochish";
 "menubar.historyEmpty" = "Tarix bo'sh";
 "menubar.clearHistory" = "Tarixni tozalash...";
 "menubar.checkUpdates" = "Yangilanishlarni tekshirish...";

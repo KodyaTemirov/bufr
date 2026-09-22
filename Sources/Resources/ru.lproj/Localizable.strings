@@ -94,10 +94,11 @@
 
 /* Hotkeys */
 "hotkeys.header" = "Глобальная горячая клавиша";
-"hotkeys.openPanel" = "Открыть панель";
+"hotkeys.action.togglePanel" = "Открыть панель";
 "hotkeys.prompt" = "Нажмите комбинацию клавиш...";
-"hotkeys.record" = "Записать новый хоткей";
+"hotkeys.none" = "Не задано";
 "hotkeys.reset" = "Сбросить";
+"hotkeys.recorder.hint" = "Нажмите на сочетание, чтобы изменить его. Esc — отмена, ⌫ — отключить.";
 "hotkeys.tip.header" = "Подсказка";
 "hotkeys.tip.text" = "Горячая клавиша работает глобально — панель откроется из любого приложения.";
 
@@ -155,7 +156,7 @@
 "appPicker.title" = "Выберите приложение";
 
 /* Menu Bar */
-"menubar.openPanel" = "Открыть панель  ⌘⇧V";
+"menubar.openPanel" = "Открыть панель";
 "menubar.historyEmpty" = "История пуста";
 "menubar.clearHistory" = "Очистить историю...";
 "menubar.checkUpdates" = "Проверить обновления...";

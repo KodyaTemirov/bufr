@@ -12,7 +12,7 @@ struct MenuBarView: View {
             Button(L10n("menubar.openPanel")) {
                 AppState.shared.togglePanel()
             }
-            .keyboardShortcut("V", modifiers: [.command, .shift])
+            .keyboardShortcut(appState.hotKeyManager.bindings[.togglePanel]?.keyboardShortcut)
 
             Divider()
 
