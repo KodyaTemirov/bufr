@@ -1,6 +1,17 @@
 import Foundation
 import Observation
 
+enum AfterCaptureAction: String, CaseIterable, Sendable {
+    case quickAccess
+    case pin
+    case nothing
+}
+
+enum QuickAccessPosition: String, CaseIterable, Sendable {
+    case bottomLeft
+    case bottomRight
+}
+
 /// Screenshot preferences, persisted in UserDefaults under `screenshot*` keys.
 @MainActor @Observable
 final class ScreenshotSettings {
@@ -18,7 +29,13 @@ final class ScreenshotSettings {
         static let windowShadow = "screenshotWindowShadow"
         static let includeCursor = "screenshotIncludeCursor"
         static let retinaAtOneX = "screenshotRetinaAtOneX"
+        static let afterCapture = "screenshotAfterCapture"
+        static let quickAccessPosition = "screenshotQuickAccessPosition"
+        static let quickAccessAutoClose = "screenshotQuickAccessAutoClose"
     }
+
+    /// Seconds before a Quick Access card closes itself; 0 = never
+    static let autoCloseChoices = [0, 5, 10, 30, 60]
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -48,6 +65,16 @@ final class ScreenshotSettings {
         didSet { defaults.set(retinaAtOneX, forKey: Keys.retinaAtOneX) }
     }
 
+    var afterCapture: AfterCaptureAction {
+        didSet { defaults.set(afterCapture.rawValue, forKey: Keys.afterCapture) }
+    }
+    var quickAccessPosition: QuickAccessPosition {
+        didSet { defaults.set(quickAccessPosition.rawValue, forKey: Keys.quickAccessPosition) }
+    }
+    var quickAccessAutoClose: Int {
+        didSet { defaults.set(quickAccessAutoClose, forKey: Keys.quickAccessAutoClose) }
+    }
+
     var filenamePrefix: String {
         let custom = customFilenamePrefix?.trimmingCharacters(in: .whitespaces) ?? ""
         return custom.isEmpty ? L10n("screenshot.filename.prefix") : custom
@@ -63,6 +90,9 @@ final class ScreenshotSettings {
         windowShadow = defaults.object(forKey: Keys.windowShadow) as? Bool ?? true
         includeCursor = defaults.object(forKey: Keys.includeCursor) as? Bool ?? false
         retinaAtOneX = defaults.object(forKey: Keys.retinaAtOneX) as? Bool ?? false
+        afterCapture = AfterCaptureAction(rawValue: defaults.string(forKey: Keys.afterCapture) ?? "") ?? .quickAccess
+        quickAccessPosition = QuickAccessPosition(rawValue: defaults.string(forKey: Keys.quickAccessPosition) ?? "") ?? .bottomLeft
+        quickAccessAutoClose = defaults.object(forKey: Keys.quickAccessAutoClose) as? Int ?? 10
     }
 
     func resetSaveFolder() {

@@ -34,4 +34,6 @@ struct CaptureOutcome: Sendable {
     let sourceAppName: String?
     /// Set for area captures; saved as the previous area
     let region: CaptureRegion?
+    /// Where the captured content was on screen (Cocoa global); pins open exactly there
+    let screenRect: CGRect?
 }

@@ -103,6 +103,26 @@ struct ScreenshotSettingsTests {
         #expect(settings.customFilenamePrefix == nil)
     }
 
+    @Test func afterCaptureDefaults() {
+        let settings = ScreenshotSettings(defaults: defaults)
+
+        #expect(settings.afterCapture == .quickAccess)
+        #expect(settings.quickAccessPosition == .bottomLeft)
+        #expect(settings.quickAccessAutoClose == 10)
+    }
+
+    @Test func afterCaptureSettingsPersist() {
+        let settings = ScreenshotSettings(defaults: defaults)
+        settings.afterCapture = .pin
+        settings.quickAccessPosition = .bottomRight
+        settings.quickAccessAutoClose = 0
+
+        let reloaded = ScreenshotSettings(defaults: defaults)
+        #expect(reloaded.afterCapture == .pin)
+        #expect(reloaded.quickAccessPosition == .bottomRight)
+        #expect(reloaded.quickAccessAutoClose == 0)
+    }
+
     @Test func changesPersist() {
         let settings = ScreenshotSettings(defaults: defaults)
         settings.saveFolder = URL(fileURLWithPath: "/tmp/shots")

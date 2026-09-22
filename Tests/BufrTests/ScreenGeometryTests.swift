@@ -68,4 +68,13 @@ struct ScreenGeometryTests {
 
         #expect(pixels.isNull)
     }
+
+    /// Display-local (top-left) rect on a screen whose Cocoa frame starts at (-1920, 900).
+    @Test func cocoaRectFromDisplayLocal() {
+        let screen = CGRect(x: -1920, y: 900, width: 1920, height: 1080)
+
+        let cocoa = ScreenGeometry.cocoaRect(fromLocal: CGRect(x: 100, y: 80, width: 200, height: 100), screenFrame: screen)
+
+        #expect(cocoa == CGRect(x: -1820, y: 1800, width: 200, height: 100))
+    }
 }

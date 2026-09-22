@@ -40,7 +40,8 @@ struct ScreenshotPipelineTests {
     private func outcome(region: CaptureRegion? = nil) -> CaptureOutcome {
         CaptureOutcome(
             image: TestImages.cgImage(width: 8, height: 6), pointScale: 2,
-            sourceAppId: "com.apple.Safari", sourceAppName: "Safari", region: region
+            sourceAppId: "com.apple.Safari", sourceAppName: "Safari", region: region,
+            screenRect: CGRect(x: 100, y: 100, width: 4, height: 3)
         )
     }
 

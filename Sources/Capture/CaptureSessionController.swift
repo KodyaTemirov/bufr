@@ -42,7 +42,7 @@ final class CaptureSessionController {
             return CaptureOutcome(
                 image: capture.image, pointScale: capture.pointScale,
                 sourceAppId: frontmost?.bundleIdentifier, sourceAppName: frontmost?.localizedName,
-                region: nil
+                region: nil, screenRect: DisplayInfo.screen(for: displayID)?.frame
             )
 
         case .previousArea:
@@ -55,7 +55,8 @@ final class CaptureSessionController {
                 return CaptureOutcome(
                     image: image, pointScale: capture.pointScale,
                     sourceAppId: frontmost?.bundleIdentifier, sourceAppName: frontmost?.localizedName,
-                    region: region
+                    region: region,
+                    screenRect: ScreenGeometry.cocoaRect(fromLocal: region.localRect, screenFrame: screen.frame)
                 )
             }
             // No previous area yet, or its display is gone: let the user pick one
@@ -111,7 +112,8 @@ final class CaptureSessionController {
             return CaptureOutcome(
                 image: image, pointScale: frame.pointScale,
                 sourceAppId: frontmost?.bundleIdentifier, sourceAppName: frontmost?.localizedName,
-                region: region
+                region: region,
+                screenRect: ScreenGeometry.cocoaRect(fromLocal: localRect, screenFrame: screen.frame)
             )
 
         case let .window(window):
@@ -120,7 +122,8 @@ final class CaptureSessionController {
             return CaptureOutcome(
                 image: capture.image, pointScale: capture.pointScale,
                 sourceAppId: owner?.bundleIdentifier, sourceAppName: owner?.localizedName ?? window.ownerName,
-                region: nil
+                region: nil,
+                screenRect: ScreenGeometry.cocoaRect(fromCG: window.frame, primaryHeight: DisplayInfo.primaryHeight)
             )
         }
     }

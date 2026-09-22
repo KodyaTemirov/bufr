@@ -20,6 +20,11 @@ enum ScreenGeometry {
         cgRect(fromCocoa: rect, primaryHeight: primaryHeight)
     }
 
+    /// Display-local rect (points, top-left origin) → Cocoa global rect on that screen.
+    static func cocoaRect(fromLocal rect: CGRect, screenFrame: CGRect) -> CGRect {
+        CGRect(x: screenFrame.minX + rect.minX, y: screenFrame.maxY - rect.maxY, width: rect.width, height: rect.height)
+    }
+
     static func cgPoint(fromCocoa point: CGPoint, primaryHeight: CGFloat) -> CGPoint {
         CGPoint(x: point.x, y: primaryHeight - point.y)
     }
