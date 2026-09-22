@@ -277,3 +277,11 @@
 "card.showInFinder" = "Finderda ko'rsatish";
 "menubar.capture.openFolder" = "Skrinshotlar jildini ochish";
 "menubar.capture.permission" = "⚠︎ Ekranni yozib olish uchun ruxsat kerak…";
+"card.annotate" = "Izoh qo'shish";
+"card.saveAs" = "Boshqacha saqlash…";
+"screenPin.opacity" = "Shaffoflik";
+"screenPin.lock" = "Qulflash (bosishlar o'tib ketadi)";
+"screenPin.resetSize" = "Asl o'lcham";
+"screenPin.closeAll" = "Barcha qadalganlarni yopish";
+"toast.copied" = "Nusxalandi";
+"toast.saved" = "Saqlandi";
