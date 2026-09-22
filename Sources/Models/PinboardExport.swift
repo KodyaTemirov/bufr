@@ -31,6 +31,13 @@ struct ExportedClipItem: Codable {
     let sortOrder: Int
     let addedAt: Date
 
+    /// Machine-local paths (screenshots folder, editor layers) never leave this Mac.
+    init(clipItem: ClipItem, sortOrder: Int, addedAt: Date) {
+        self.clipItem = clipItem.withoutLocalPaths()
+        self.sortOrder = sortOrder
+        self.addedAt = addedAt
+    }
+
     enum CodingKeys: String, CodingKey {
         case clipItem = "clip_item"
         case sortOrder = "sort_order"

@@ -35,4 +35,22 @@ struct ExportCompatibilityTests {
         #expect(portable.ocrText == "text")
         #expect(portable.pixelWidth == 10)
     }
+
+    /// Absolute paths contain the user name and mean nothing on another Mac.
+    @Test func exportDropsLocalPaths() throws {
+        let item = ClipItem(
+            contentType: .image, imagePath: "c.png", hash: "h", origin: .screenshot,
+            annotationPath: "c.annotations.json", savedFilePath: "/Users/someone/Pictures/Bufr/c.png"
+        )
+
+        let exported = ExportedClipItem(clipItem: item, sortOrder: 0, addedAt: Date())
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let json = String(decoding: try encoder.encode(exported), as: UTF8.self)
+
+        #expect(exported.clipItem.savedFilePath == nil)
+        #expect(exported.clipItem.annotationPath == nil)
+        #expect(!json.contains("/Users/"))
+        #expect(exported.clipItem.origin == .screenshot)
+    }
 }
