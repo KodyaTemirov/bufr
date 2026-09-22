@@ -54,4 +54,19 @@ struct DragFileResolverTests {
     @Test func nothingToDragReturnsNil() throws {
         #expect(try DragFileResolver.fileURL(savedFilePath: nil, internalFile: nil, suggestedName: "x.png", temporaryDirectory: temp) == nil)
     }
+
+    /// Dragged copies must not pile up (or outlive a deleted item) in the temp folder.
+    @Test func purgeRemovesOnlyOldDragFolders() throws {
+        let old = temp.appendingPathComponent("old", isDirectory: true)
+        let fresh = temp.appendingPathComponent("fresh", isDirectory: true)
+        try FileManager.default.createDirectory(at: old, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: fresh, withIntermediateDirectories: true)
+        let now = Date()
+        try FileManager.default.setAttributes([.modificationDate: now.addingTimeInterval(-7200)], ofItemAtPath: old.path)
+
+        DragFileResolver.purge(temporaryDirectory: temp, olderThan: 3600, now: now)
+
+        #expect(!FileManager.default.fileExists(atPath: old.path))
+        #expect(FileManager.default.fileExists(atPath: fresh.path))
+    }
 }

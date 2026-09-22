@@ -14,7 +14,7 @@ struct ClipImageTransferable: Transferable {
                 savedFilePath: item.savedFilePath,
                 internalFile: internalFile,
                 suggestedName: ImageExporter.suggestedFilename(for: item),
-                temporaryDirectory: FileManager.default.temporaryDirectory.appendingPathComponent("BufrDrag", isDirectory: true)
+                temporaryDirectory: DragFileResolver.dragDirectory
             ) else {
                 throw CocoaError(.fileNoSuchFile)
             }

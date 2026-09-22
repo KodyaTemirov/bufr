@@ -35,9 +35,15 @@ enum ImageExporter {
         panel.allowedContentTypes = [.png]
         panel.canCreateDirectories = true
         panel.nameFieldStringValue = suggestedFilename(for: item)
-        // An accessory app must be active for the panel to come to the front
+        // An accessory app must be active for the panel to come to the front;
+        // afterwards the app the user came from gets focus back
+        let previousApp = NSWorkspace.shared.frontmostApplication
         NSApp.activate(ignoringOtherApps: true)
-        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let response = panel.runModal()
+        if let previousApp, previousApp != NSRunningApplication.current {
+            previousApp.activate()
+        }
+        guard response == .OK, let url = panel.url else { return }
 
         do {
             try png.write(to: url, options: .atomic)

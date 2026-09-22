@@ -182,6 +182,9 @@ final class AppState {
         }
         startTextIndexing()
         showLaunchNotices()
+        Task.detached(priority: .utility) {
+            DragFileResolver.purge()
+        }
         screenshots.keptWindowIDs = { [weak self] in
             self?.pins.windowIDs ?? []
         }

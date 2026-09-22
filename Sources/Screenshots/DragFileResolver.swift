@@ -1,6 +1,25 @@
 import Foundation
 
 enum DragFileResolver {
+    /// Where dragged copies go; cleaned at launch
+    static var dragDirectory: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("BufrDrag", isDirectory: true)
+    }
+
+    /// Removes dragged copies older than `age` (drop targets have long finished reading them).
+    static func purge(temporaryDirectory: URL = dragDirectory, olderThan age: TimeInterval = 3600, now: Date = Date()) {
+        let fileManager = FileManager.default
+        guard let folders = try? fileManager.contentsOfDirectory(
+            at: temporaryDirectory, includingPropertiesForKeys: [.contentModificationDateKey]
+        ) else { return }
+        for folder in folders {
+            let modified = (try? folder.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast
+            if now.timeIntervalSince(modified) > age {
+                try? fileManager.removeItem(at: folder)
+            }
+        }
+    }
+
     /// The file handed to a drop target: the copy in the screenshots folder when it still
     /// exists, otherwise a temporary PNG of the history file under a readable name
     /// (history files are named by UUID).

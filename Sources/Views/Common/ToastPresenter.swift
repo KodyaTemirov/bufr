@@ -24,7 +24,11 @@ enum ToastPresenter {
         self.panel = panel
         panel.contentView = hosting
         panel.setFrame(frame, display: true)
-        panel.alphaValue = 1
+        // Replaces a fade-out still in flight (a plain assignment would lose to the animator)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0
+            panel.animator().alphaValue = 1
+        }
         panel.orderFrontRegardless()
 
         hideTask?.cancel()

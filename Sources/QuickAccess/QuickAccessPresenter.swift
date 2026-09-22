@@ -83,6 +83,7 @@ final class QuickAccessPresenter {
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
         panel.becomesKeyOnlyIfNeeded = true
+        panel.allowsToolTipsWhenApplicationIsInactive = true // Bufr is usually inactive after a capture
 
         let hosting = NSHostingView(rootView: QuickAccessStackView(controller: controller, actions: actions))
         hosting.autoresizingMask = [.width, .height]
