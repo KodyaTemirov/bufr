@@ -47,7 +47,7 @@ struct TextCapturePipelineTests {
         #expect(store.items.first?.origin == .textCapture)
         #expect(store.items.first?.textContent == text)
         #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path).isEmpty)
-        #expect(notices.messages.count == 1)
+        #expect(notices.messages.last == L10n("toast.textCopied", text.count))
     }
 
     @Test func qrPayloadIsUsedWhenThereIsNoText() async throws {
@@ -63,11 +63,29 @@ struct TextCapturePipelineTests {
         #expect(text == nil)
         #expect(store.items.isEmpty)
         #expect(pasteboard.string(forType: .string) == nil)
-        #expect(notices.messages.count == 1)
+        #expect(notices.messages.last == L10n("toast.noText"))
     }
 }
 
 @MainActor
 final class NoticeRecorder {
     var messages: [String] = []
+}
+
+extension TextCapturePipelineTests {
+    /// Most QR codes come with a caption; selecting the code means "give me the link".
+    @Test func prominentQRCodeWinsOverItsCaption() async throws {
+        let text = await coordinator.processTextCapture(outcome(TestImages.qrWithCaption("https://example.com/pay", caption: "Scan to pay")))
+
+        #expect(text == "https://example.com/pay")
+    }
+
+    /// Recognition can take seconds right after launch; the user sees it is working.
+    @Test func slowRecognitionShowsAProgressNotice() async throws {
+        coordinator.slowRecognitionNoticeDelay = .zero
+
+        let text = try #require(await coordinator.processTextCapture(outcome(TestImages.text("Receipt 42"))))
+
+        #expect(notices.messages == [L10n("toast.recognizing"), L10n("toast.textCopied", text.count)])
+    }
 }

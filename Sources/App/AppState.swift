@@ -363,12 +363,11 @@ final class AppState {
 
     private func startTextIndexing() {
         let indexer = ocrIndexer
-        guard screenshotSettings.ocrIndexingEnabled else {
-            Task { await indexer.setEnabled(false) }
-            return
-        }
-        // Let launch finish first; then warm up Vision and work through older images
+        let indexingEnabled = screenshotSettings.ocrIndexingEnabled
+        // Let launch finish first; then warm up Vision (Capture Text needs it even with
+        // indexing off) and work through older images
         Task(priority: .utility) {
+            await indexer.setEnabled(indexingEnabled)
             try? await Task.sleep(for: .seconds(10))
             await indexer.warmUp()
             await indexer.startBackfill()

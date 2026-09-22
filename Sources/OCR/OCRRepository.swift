@@ -12,21 +12,29 @@ struct OCRRepository: Sendable {
     let database: AppDatabase
 
     /// The newest image that has not been recognized yet.
-    func nextPending() throws -> UUID? {
+    func nextPending(excluding skipped: Set<UUID> = []) throws -> UUID? {
         try database.dbQueue.read { db in
             try ClipItem
                 .filter(ClipItem.Columns.contentType == ContentType.image)
                 .filter(ClipItem.Columns.ocrText == nil)
+                .filter(!skipped.contains(ClipItem.Columns.id))
                 .order(ClipItem.Columns.createdAt.desc)
                 .fetchOne(db)?
                 .id
         }
     }
 
-    /// nil when the item is gone; `.some(nil)` when it has no image file name.
-    func imagePath(for id: UUID) throws -> String?? {
+    /// The image file, the hash of its current pixels and the text stored so far.
+    struct Source: Sendable {
+        let imagePath: String?
+        let hash: String
+        let ocrText: String?
+    }
+
+    /// nil when the item is gone.
+    func source(for id: UUID) throws -> Source? {
         try database.dbQueue.read { db in
-            try ClipItem.fetchOne(db, key: id).map { $0.imagePath }
+            try ClipItem.fetchOne(db, key: id).map { Source(imagePath: $0.imagePath, hash: $0.hash, ocrText: $0.ocrText) }
         }
     }
 
@@ -37,11 +45,15 @@ struct OCRRepository: Sendable {
         }
     }
 
-    func setText(_ text: String, for id: UUID) throws {
+    /// Stores the text only if the image still has the pixels it was recognized from; returns
+    /// false when it was edited meanwhile.
+    @discardableResult
+    func setText(_ text: String, for id: UUID, ifHash hash: String) throws -> Bool {
         try database.dbQueue.write { db in
-            _ = try ClipItem
+            try ClipItem
                 .filter(key: id)
-                .updateAll(db, ClipItem.Columns.ocrText.set(to: text))
+                .filter(ClipItem.Columns.hash == hash)
+                .updateAll(db, ClipItem.Columns.ocrText.set(to: text)) > 0
         }
     }
 

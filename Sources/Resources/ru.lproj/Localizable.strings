@@ -356,3 +356,4 @@
 "setup.folder.change" = "Изменить…";
 "setup.later" = "Позже";
 "toast.accessibilityNeeded" = "Скопировано. Чтобы вставлять в приложения, разрешите Универсальный доступ: Настройки Bufr → Разрешения";
+"toast.recognizing" = "Распознаю текст…";

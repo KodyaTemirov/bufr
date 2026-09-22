@@ -42,4 +42,33 @@ struct OCRTextAssemblerTests {
     @Test func emptyTextIsIgnored() {
         #expect(OCRTextAssembler.text(from: [line("  ", x: 0, y: 0.5)]) == "")
     }
+
+    @Test func sideBySideColumnsAreReadOneAfterAnother() {
+        let rows: [CGFloat] = [0.8, 0.72, 0.64, 0.56]
+        let lines = rows.enumerated().flatMap { index, y in
+            [line("L\(index + 1)", x: 0.05, y: y, width: 0.4), line("R\(index + 1)", x: 0.55, y: y, width: 0.4)]
+        }
+
+        #expect(OCRTextAssembler.text(from: lines) == "L1\nL2\nL3\nL4\n\nR1\nR2\nR3\nR4")
+    }
+
+    @Test func fullWidthTitleComesBeforeTheColumns() {
+        let rows: [CGFloat] = [0.7, 0.62, 0.54]
+        let lines = [line("Title", x: 0.05, y: 0.9, width: 0.9)] + rows.enumerated().flatMap { index, y in
+            [line("L\(index + 1)", x: 0.05, y: y, width: 0.4), line("R\(index + 1)", x: 0.55, y: y, width: 0.4)]
+        }
+
+        #expect(OCRTextAssembler.text(from: lines) == "Title\n\nL1\nL2\nL3\n\nR1\nR2\nR3")
+    }
+
+    /// Settings screens and tables: a short label and its value stay on one line.
+    @Test func labelValueRowsStayTogether() {
+        let lines = [
+            line("Name", x: 0.05, y: 0.8, width: 0.08), line("John", x: 0.5, y: 0.8, width: 0.2),
+            line("Email", x: 0.05, y: 0.72, width: 0.08), line("john@example.com", x: 0.5, y: 0.72, width: 0.3),
+            line("City", x: 0.05, y: 0.64, width: 0.08), line("Tashkent", x: 0.5, y: 0.64, width: 0.2),
+        ]
+
+        #expect(OCRTextAssembler.text(from: lines) == "Name John\nEmail john@example.com\nCity Tashkent")
+    }
 }

@@ -98,4 +98,23 @@ enum TestImages {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
         return CGImageSourceCreateImageAtIndex(source, 0, nil)
     }
+
+    /// A QR code taking most of the image with a short caption under it.
+    static func qrWithCaption(_ message: String, caption: String) -> CGImage {
+        let code = qrCode(message)
+        let width = code.width + 80
+        let height = code.height + 140
+        let context = CGContext(
+            data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        )!
+        context.setFillColor(red: 1, green: 1, blue: 1, alpha: 1)
+        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        context.draw(code, in: CGRect(x: 40, y: 120, width: code.width, height: code.height))
+        let line = CTLineCreateWithAttributedString(NSAttributedString(string: caption, attributes: [.font: NSFont.systemFont(ofSize: 40)]))
+        context.textPosition = CGPoint(x: 40, y: 40)
+        CTLineDraw(line, context)
+        return context.makeImage()!
+    }
 }

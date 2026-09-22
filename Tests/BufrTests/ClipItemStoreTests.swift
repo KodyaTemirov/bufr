@@ -101,4 +101,25 @@ struct ClipItemStoreTests {
         #expect(shot.pixelSizeText == "2880 × 1800")
         #expect(ClipItem(contentType: .image, hash: "h2").pixelSizeText == nil)
     }
+
+    /// A card's in-memory copy may predate OCR or an edit; renaming or starring it must not
+    /// write those stale fields back.
+    @Test func renameAndFavoriteWithStaleCopyKeepNewerColumns() throws {
+        let database = try AppDatabase.makeEmpty()
+        let store = ClipItemStore(database: database)
+        let stale = try store.insert(ClipItem(contentType: .image, imagePath: "s.png", hash: "old", origin: .screenshot))
+        _ = try store.applyEdit(id: stale.id, hash: "new", annotationPath: "s.annotations.json", pixelWidth: 10, pixelHeight: 10)
+        try OCRRepository(database: database).setText("recognized", for: stale.id, ifHash: "new")
+
+        try store.updateCustomTitle(stale, newTitle: "Chart")
+        try store.toggleFavorite(stale)
+        try store.togglePinned(stale)
+
+        let current = try #require(try store.existingItem(hash: "new"))
+        #expect(current.customTitle == "Chart")
+        #expect(current.isFavorite)
+        #expect(current.isPinned)
+        #expect(current.ocrText == "recognized")
+        #expect(current.annotationPath == "s.annotations.json")
+    }
 }

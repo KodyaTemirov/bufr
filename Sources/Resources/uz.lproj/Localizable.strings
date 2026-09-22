@@ -356,3 +356,4 @@
 "setup.folder.change" = "O'zgartirish…";
 "setup.later" = "Keyinroq";
 "toast.accessibilityNeeded" = "Nusxalandi. Ilovalarga qo'yish uchun Bufr sozlamalari → Ruxsatlar bo'limida Maxsus imkoniyatlarga ruxsat bering";
+"toast.recognizing" = "Matn aniqlanmoqda…";

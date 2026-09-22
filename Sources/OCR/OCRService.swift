@@ -28,14 +28,44 @@ struct OCRService: Sendable {
     func recognizeText(in image: CGImage) async throws -> String {
         let languages = languages
         return try await OCRSerialQueue.shared.run {
-            try await Self.recognize(image, languages: languages)
+            try await Self.retryingOnce {
+                try await Self.recognize(image, languages: languages)
+            }
         }
     }
 
-    func barcodePayloads(in image: CGImage) async throws -> [String] {
+    struct Barcode: Equatable, Sendable {
+        let payload: String
+        /// Share of the image the code covers, 0…1
+        let coverage: Double
+    }
+
+    func barcodes(in image: CGImage) async throws -> [Barcode] {
         try await OCRSerialQueue.shared.run {
-            let observations = try await DetectBarcodesRequest().perform(on: image)
-            return observations.compactMap(\.payloadString)
+            let observations = try await Self.retryingOnce {
+                try await DetectBarcodesRequest().perform(on: image)
+            }
+            return observations.compactMap { observation in
+                guard let payload = observation.payloadString else { return nil }
+                let box = observation.boundingBox
+                return Barcode(payload: payload, coverage: Double(box.width * box.height))
+            }
+        }
+    }
+
+    /// Vision sometimes fails the first requests while it compiles its models (after an
+    /// update, "e5rt … failed"), even one request at a time; the next attempt works.
+    static func retryingOnce<T: Sendable>(
+        after pause: Duration = .milliseconds(500),
+        _ work: @Sendable () async throws -> T
+    ) async throws -> T {
+        do {
+            return try await work()
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            try await Task.sleep(for: pause)
+            return try await work()
         }
     }
 

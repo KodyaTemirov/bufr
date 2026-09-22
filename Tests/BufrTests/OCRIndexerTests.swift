@@ -70,4 +70,117 @@ struct OCRIndexerTests {
         #expect(try repository.text(for: item.id) == nil)
         #expect(try repository.progress() == OCRRepository.Progress(done: 0, total: 1))
     }
+
+    // MARK: - Concurrency (fake recognizer, no Vision)
+
+    /// Like Vision, the fake ignores task cancellation; every call returns "call <n>".
+    private func fakeIndexer(delay: Duration, calls: RecognitionCounter) -> OCRIndexer {
+        OCRIndexer(repository: repository, imageStorage: storage, recognize: { _ in
+            let number = await calls.increment()
+            await RecognitionCounter.uncancellableSleep(delay)
+            return "call \(number)"
+        }, pauseBetweenImages: .zero)
+    }
+
+    /// Turning recognition off and on during a recognition must not start a second worker
+    /// that recognizes the same image again.
+    @Test func togglingDuringRecognitionDoesNotDoubleTheWork() async throws {
+        let calls = RecognitionCounter()
+        let indexer = fakeIndexer(delay: .milliseconds(150), calls: calls)
+        for n in 0..<3 {
+            _ = try await ingestor.ingestImage(.init(data: png(TestImages.cgImage(width: 10 + n, height: 10)), origin: .clipboard))
+        }
+
+        await indexer.startBackfill()
+        await calls.waitForFirstCall()
+        await indexer.setEnabled(false)
+        await indexer.setEnabled(true)
+        try await Task.sleep(for: .milliseconds(1000))
+        await indexer.waitUntilIdle()
+
+        #expect(await calls.count == 3)
+        #expect(try repository.progress() == OCRRepository.Progress(done: 3, total: 3))
+    }
+
+    /// "Copy Text" right after a capture waits for the recognition already running.
+    @Test func recognizeNowJoinsTheRunningRecognition() async throws {
+        let calls = RecognitionCounter()
+        let indexer = fakeIndexer(delay: .milliseconds(200), calls: calls)
+        let item = try await ingestor.ingestImage(.init(data: png(TestImages.cgImage(width: 20, height: 10)), origin: .screenshot))
+
+        await indexer.enqueue(item.id)
+        await calls.waitForFirstCall()
+        let text = await indexer.recognizeNow(item.id)
+        await indexer.waitUntilIdle()
+
+        #expect(text == "call 1")
+        #expect(await calls.count == 1)
+    }
+
+    /// An image edited (e.g. pixelated) while being recognized must not keep the old image's
+    /// text; it is recognized again.
+    @Test func resultForAnOutdatedImageIsDropped() async throws {
+        let calls = RecognitionCounter()
+        let indexer = fakeIndexer(delay: .milliseconds(200), calls: calls)
+        let item = try await ingestor.ingestImage(.init(data: png(TestImages.cgImage(width: 30, height: 10)), origin: .screenshot))
+
+        await indexer.enqueue(item.id)
+        await calls.waitForFirstCall()
+        _ = try store.applyEdit(id: item.id, hash: "edited", annotationPath: nil, pixelWidth: 30, pixelHeight: 10)
+        await indexer.waitUntilIdle()
+
+        #expect(try repository.text(for: item.id) == "call 2")
+    }
+
+    /// Vision can fail (e.g. while it compiles its models under load). The image must stay
+    /// pending for a later retry instead of being marked "no text" for good.
+    @Test func failedRecognitionLeavesTheImagePending() async throws {
+        let calls = RecognitionCounter()
+        let indexer = OCRIndexer(repository: repository, imageStorage: storage, recognize: { _ in
+            _ = await calls.increment()
+            throw CocoaError(.featureUnsupported)
+        }, pauseBetweenImages: .zero)
+        let item = try await ingestor.ingestImage(.init(data: png(TestImages.cgImage(width: 40, height: 10)), origin: .screenshot))
+
+        await indexer.startBackfill()
+        await indexer.waitUntilIdle()
+
+        #expect(try repository.text(for: item.id) == nil)
+        #expect(await calls.count == 1) // not retried in a loop
+    }
+
+    /// Warm-up must load the recognizer even when background indexing is off: "Capture Text"
+    /// still needs it.
+    @Test func warmUpRunsOnceEvenWithIndexingOff() async throws {
+        let calls = RecognitionCounter()
+        let indexer = fakeIndexer(delay: .zero, calls: calls)
+
+        await indexer.setEnabled(false)
+        await indexer.warmUp()
+        await indexer.warmUp()
+
+        #expect(await calls.count == 1)
+    }
+}
+
+actor RecognitionCounter {
+    private(set) var count = 0
+
+    func increment() -> Int {
+        count += 1
+        return count
+    }
+
+    func waitForFirstCall() async {
+        while count == 0 {
+            try? await Task.sleep(for: .milliseconds(5))
+        }
+    }
+
+    static func uncancellableSleep(_ duration: Duration) async {
+        let seconds = Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global().asyncAfter(deadline: .now() + seconds) { continuation.resume() }
+        }
+    }
 }

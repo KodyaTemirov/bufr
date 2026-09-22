@@ -196,43 +196,19 @@ final class ClipItemStore {
     // MARK: - Update
 
     func toggleFavorite(_ item: ClipItem) throws {
-        let updated = try database.dbQueue.write { db -> ClipItem in
-            var u = item
-            u.isFavorite.toggle()
-            try u.update(db)
-            return u
-        }
-        updateItemInPlace(updated)
+        try updateColumns(of: item.id, [ClipItem.Columns.isFavorite.set(to: !item.isFavorite)])
     }
 
     func togglePinned(_ item: ClipItem) throws {
-        let updated = try database.dbQueue.write { db -> ClipItem in
-            var u = item
-            u.isPinned.toggle()
-            try u.update(db)
-            return u
-        }
-        updateItemInPlace(updated)
+        try updateColumns(of: item.id, [ClipItem.Columns.isPinned.set(to: !item.isPinned)])
     }
 
     func updateTextContent(_ item: ClipItem, newText: String) throws {
-        let updated = try database.dbQueue.write { db -> ClipItem in
-            var u = item
-            u.textContent = newText
-            try u.update(db)
-            return u
-        }
-        updateItemInPlace(updated)
+        try updateColumns(of: item.id, [ClipItem.Columns.textContent.set(to: newText)])
     }
 
     func updateCustomTitle(_ item: ClipItem, newTitle: String?) throws {
-        let updated = try database.dbQueue.write { db -> ClipItem in
-            var u = item
-            u.customTitle = (newTitle?.isEmpty == true) ? nil : newTitle
-            try u.update(db)
-            return u
-        }
-        updateItemInPlace(updated)
+        try updateColumns(of: item.id, [ClipItem.Columns.customTitle.set(to: (newTitle?.isEmpty == true) ? nil : newTitle)])
     }
 
     /// Only `saved_file_path` is written, so a stale copy can't revert other edits.
@@ -279,6 +255,16 @@ final class ClipItemStore {
     }
 
     // MARK: - In-place update
+
+    /// Writes only the given columns: a card's copy of the item may predate OCR or an edit,
+    /// and a full-row update would write those stale values back.
+    private func updateColumns(of id: UUID, _ assignments: [ColumnAssignment]) throws {
+        let updated = try database.dbQueue.write { db -> ClipItem in
+            try ClipItem.filter(key: id).updateAll(db, assignments)
+            return try ClipItem.find(db, key: id)
+        }
+        updateItemInPlace(updated)
+    }
 
     private func updateItemInPlace(_ updated: ClipItem) {
         if let idx = items.firstIndex(where: { $0.id == updated.id }) {

@@ -24,6 +24,8 @@ final class ScreenshotCoordinator {
     var notify: (String, String) -> Void = { ToastPresenter.show($0, systemImage: $1) }
     /// On-device text recognition for "Capture Text"
     var ocr = OCRService()
+    /// After this long without a result, "Recognizing…" tells the user it is working
+    var slowRecognitionNoticeDelay: Duration = .milliseconds(600)
 
     var isCapturing: Bool { session.isActive }
 
@@ -151,15 +153,17 @@ final class ScreenshotCoordinator {
         return item
     }
 
-    /// "Capture Text": the recognized text (or a QR code's content when there is no text) goes
-    /// to the clipboard and into history. Nothing is saved to the screenshots folder.
+    /// "Capture Text": the recognized text (or a QR code's content) goes to the clipboard and
+    /// into history. Nothing is saved to the screenshots folder.
     @discardableResult
     func processTextCapture(_ outcome: CaptureOutcome) async -> String? {
-        let image = outcome.image
-        var result = (try? await ocr.recognizeText(in: image)) ?? ""
-        if result.isEmpty {
-            result = (try? await ocr.barcodePayloads(in: image))?.first ?? ""
+        let delay = slowRecognitionNoticeDelay
+        let notice = Task { [weak self] in
+            try await Task.sleep(for: delay)
+            self?.notify(L10n("toast.recognizing"), "text.viewfinder")
         }
+        let result = await recognizedText(in: outcome.image)
+        notice.cancel()
         guard !result.isEmpty else {
             notify(L10n("toast.noText"), "text.magnifyingglass")
             return nil
@@ -180,6 +184,18 @@ final class ScreenshotCoordinator {
         }
         notify(L10n("toast.textCopied", result.count), "text.viewfinder")
         return result
+    }
+
+    /// A QR code filling a good part of the selection wins over its caption ("Scan to pay"):
+    /// selecting the code means "give me the link". Otherwise the text, and a smaller code
+    /// only when there is no text.
+    private func recognizedText(in image: CGImage) async -> String {
+        let codes = (try? await ocr.barcodes(in: image)) ?? []
+        if let prominent = codes.first(where: { $0.coverage >= 0.25 }) {
+            return prominent.payload
+        }
+        let text = (try? await ocr.recognizeText(in: image)) ?? ""
+        return text.isEmpty ? codes.first?.payload ?? "" : text
     }
 
     private func saveToFolder(_ png: Data) -> URL? {

@@ -307,7 +307,7 @@
 "screenshots.quickAccess.seconds" = "After %d s";
 "hotkeys.action.captureText" = "Capture Text";
 "toast.noText" = "No text found";
-"toast.textCopied" = "Copied %d characters";
+"toast.textCopied" = "Characters copied: %d";
 "card.copyText" = "Copy Text";
 "screenshots.ocr.header" = "Text in Images";
 "screenshots.ocr.enabled" = "Recognize text so search finds it";
@@ -356,3 +356,4 @@
 "setup.folder.change" = "Change…";
 "setup.later" = "Later";
 "toast.accessibilityNeeded" = "Copied. To paste into apps, allow Accessibility in Bufr Settings → Permissions";
+"toast.recognizing" = "Recognizing text…";
