@@ -4,6 +4,7 @@
 "settings.tab.exclusions" = "Исключения";
 "settings.tab.updates" = "Обновления";
 "settings.tab.about" = "О приложении";
+"settings.window.title" = "Настройки Bufr";
 
 /* General Settings - Retention */
 "general.retention.header" = "Сохранять историю";

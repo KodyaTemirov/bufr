@@ -166,22 +166,6 @@ final class AppState {
         isPanelVisible = false
     }
 
-    func openSettingsWindow() {
-        // Try both selectors — macOS 13 uses showSettingsWindow:, macOS 14+ may use either
-        if NSApp.responds(to: Selector(("showSettingsWindow:"))) {
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        } else {
-            NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            NSApp.activate(ignoringOtherApps: true)
-            for window in NSApp.windows where window.isVisible && !(window is NSPanel) {
-                window.collectionBehavior.insert(.moveToActiveSpace)
-                window.makeKeyAndOrderFront(nil)
-            }
-        }
-    }
-
     // MARK: - Paste
 
     func pasteItem(_ item: ClipItem, asPlainText: Bool = false) {

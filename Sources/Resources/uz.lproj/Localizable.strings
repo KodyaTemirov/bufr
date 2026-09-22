@@ -4,6 +4,7 @@
 "settings.tab.exclusions" = "Istisno";
 "settings.tab.updates" = "Yangilanishlar";
 "settings.tab.about" = "Dastur haqida";
+"settings.window.title" = "Bufr sozlamalari";
 
 /* General Settings - Retention */
 "general.retention.header" = "Tarixni saqlash";

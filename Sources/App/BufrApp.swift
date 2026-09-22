@@ -7,10 +7,5 @@ struct BufrApp: App {
             MenuBarView()
                 .environment(AppState.shared)
         }
-
-        Settings {
-            SettingsView()
-                .environment(AppState.shared)
-        }
     }
 }

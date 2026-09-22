@@ -1,6 +1,6 @@
 import SwiftUI
 
-private enum SettingsTab: String, CaseIterable, Identifiable {
+enum SettingsTab: String, CaseIterable, Identifiable {
     case general
     case hotkeys
     case exclusions
@@ -30,15 +30,21 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
     }
 }
 
+/// Selected Settings tab, shared with SettingsWindowController so code can open a specific tab.
+@MainActor @Observable
+final class SettingsSelection {
+    var tab: SettingsTab = .general
+}
+
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
 
-    @State private var selectedTab: SettingsTab = .general
+    @Bindable var selection: SettingsSelection
 
     var body: some View {
         HStack(spacing: 0) {
             // Sidebar
-            List(SettingsTab.allCases, selection: $selectedTab) { tab in
+            List(SettingsTab.allCases, selection: $selection.tab) { tab in
                 Label(tab.title, systemImage: tab.icon)
                     .tag(tab)
             }
@@ -49,7 +55,7 @@ struct SettingsView: View {
 
             // Detail
             Group {
-                switch selectedTab {
+                switch selection.tab {
                 case .general:
                     GeneralSettingsView()
                 case .hotkeys:

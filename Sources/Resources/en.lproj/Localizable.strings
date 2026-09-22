@@ -4,6 +4,7 @@
 "settings.tab.exclusions" = "Exclusions";
 "settings.tab.updates" = "Updates";
 "settings.tab.about" = "About";
+"settings.window.title" = "Bufr Settings";
 
 /* General Settings - Retention */
 "general.retention.header" = "Keep History";

@@ -2,7 +2,6 @@ import SwiftUI
 
 struct MenuBarView: View {
     @Environment(AppState.self) private var appState
-    @Environment(\.openSettings) private var openSettings
     @State private var menuItems: [ClipItem] = []
 
     var body: some View {
@@ -42,15 +41,13 @@ struct MenuBarView: View {
                 Task {
                     await AppState.shared.updater.checkForUpdates()
                 }
-                NSApplication.shared.activate()
-                openSettings()
+                SettingsWindowController.shared.show(tab: .updates)
             }
 
             Divider()
 
             Button(L10n("menubar.settings")) {
-                NSApplication.shared.activate()
-                openSettings()
+                SettingsWindowController.shared.show()
             }
             .keyboardShortcut(",", modifiers: .command)
 
