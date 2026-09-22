@@ -20,6 +20,9 @@ final class AppState {
     let panelManager: PanelManager
     let clipboardPaster: ClipboardPaster
     let pinboardStore: PinboardStore
+    let screenshotSettings: ScreenshotSettings
+    let permissions: PermissionsManager
+    let screenshots: ScreenshotCoordinator
     var updater: AppUpdater
 
     // MARK: - UI State
@@ -102,6 +105,14 @@ final class AppState {
         self.panelManager = PanelManager()
         self.clipboardPaster = ClipboardPaster()
         self.pinboardStore = PinboardStore(database: database)
+        self.screenshotSettings = ScreenshotSettings()
+        self.permissions = PermissionsManager()
+        self.screenshots = ScreenshotCoordinator(
+            settings: screenshotSettings,
+            permissions: permissions,
+            ingestor: clipIngestor,
+            store: clipItemStore
+        )
         self.updater = AppUpdater()
 
         // Load initial data
@@ -127,6 +138,10 @@ final class AppState {
             self?.perform(action)
         }
         hotKeyManager.registerAll()
+
+        screenshots.prepareForCapture = { [weak self] in
+            self?.hidePanel()
+        }
 
         // Panel close callback
         panelManager.onPanelClose = { [weak self] in
@@ -239,11 +254,22 @@ final class AppState {
     // MARK: - Hotkey
 
     private func perform(_ action: HotKeyAction) {
+        // While a selection is on screen only capture hotkeys matter (a second press cancels it)
+        if screenshots.isCapturing && action.group != .screenshots {
+            return
+        }
+
         switch action {
         case .togglePanel:
             togglePanel()
-        case .captureArea, .captureWindow, .captureFullscreen, .capturePreviousArea:
-            break // wired to ScreenshotCoordinator in M1 Task 9
+        case .captureArea:
+            screenshots.capture(.area)
+        case .captureWindow:
+            screenshots.capture(.window)
+        case .captureFullscreen:
+            screenshots.capture(.fullscreen)
+        case .capturePreviousArea:
+            screenshots.capture(.previousArea)
         }
     }
 
