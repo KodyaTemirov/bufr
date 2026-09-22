@@ -33,12 +33,17 @@ final class HotKeyManager {
         apply(store.binding(for: action), to: action)
     }
 
+    /// True while every hotkey is paused (recording a new one, or later a capture session).
+    private(set) var isSuspended = false
+
     /// Unregisters every hotkey (while recording a new one, or during a capture session).
     func suspendAll() {
+        isSuspended = true
         hotKeys.values.forEach { $0.isPaused = true }
     }
 
     func resumeAll() {
+        isSuspended = false
         hotKeys.values.forEach { $0.isPaused = false }
     }
 
