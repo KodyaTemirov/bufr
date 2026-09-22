@@ -12,17 +12,17 @@ final class ClipboardMonitor {
 
     private static let maxImageSize = 50 * 1024 * 1024 // 50 MB
 
-    private let clipItemStore: ClipItemStore
+    private let ingestor: ClipIngestor
     private let exclusionManager: ExclusionManager
     private let pasteboard: NSPasteboard
     var playCopySound: Bool = false
 
     init(
-        clipItemStore: ClipItemStore,
+        ingestor: ClipIngestor,
         exclusionManager: ExclusionManager,
         pasteboard: NSPasteboard = .general
     ) {
-        self.clipItemStore = clipItemStore
+        self.ingestor = ingestor
         self.exclusionManager = exclusionManager
         self.pasteboard = pasteboard
         self.lastChangeCount = pasteboard.changeCount
@@ -46,9 +46,10 @@ final class ClipboardMonitor {
         timer = nil
     }
 
-    // MARK: - Private
+    // MARK: - Change detection
 
-    private func checkForChanges() {
+    /// Internal (not private) so tests can drive it without the timer.
+    func checkForChanges() {
         let currentCount = pasteboard.changeCount
         guard currentCount != lastChangeCount else { return }
         lastChangeCount = currentCount
@@ -63,73 +64,53 @@ final class ClipboardMonitor {
         if exclusionManager.isExcluded(bundleId: appBundleId) {
             return
         }
+        let appName = ExclusionManager.frontmostAppName()
 
-        // Detect content type
         let contentType = ContentTypeDetector.detect(from: pasteboard)
 
-        // Extract content
-        let textContent = ContentTypeDetector.extractTextContent(from: pasteboard, type: contentType)
-        let richContent = ContentTypeDetector.extractRichContent(from: pasteboard)
-        let imageData = ContentTypeDetector.extractImageData(from: pasteboard)
-        let filePaths = ContentTypeDetector.extractFilePaths(from: pasteboard)
-
-        // Skip empty content
-        if textContent == nil && imageData == nil && filePaths == nil {
+        if contentType == .image {
+            // Oversized or unreadable images are skipped: a card without an image is useless
+            guard let imageData = ContentTypeDetector.extractImageData(from: pasteboard),
+                  imageData.count <= Self.maxImageSize else { return }
+            let input = ClipIngestor.ImageInput(
+                data: imageData, origin: .clipboard,
+                sourceAppId: appBundleId, sourceAppName: appName
+            )
+            Task {
+                do {
+                    try await self.ingestor.ingestImage(input)
+                    self.playSoundIfEnabled()
+                } catch {
+                    logger.error("Failed to save image clip: \(error.localizedDescription, privacy: .public)")
+                }
+            }
             return
         }
 
-        // Generate hash for deduplication
-        let hash = HashGenerator.hashForClipContent(
-            type: contentType,
-            text: textContent,
-            imageData: imageData,
-            filePaths: filePaths
+        let input = ClipIngestor.ContentInput(
+            contentType: contentType,
+            textContent: ContentTypeDetector.extractTextContent(from: pasteboard, type: contentType),
+            richContent: ContentTypeDetector.extractRichContent(from: pasteboard),
+            filePaths: ContentTypeDetector.extractFilePaths(from: pasteboard),
+            origin: .clipboard,
+            sourceAppId: appBundleId,
+            sourceAppName: appName
         )
 
-        // Save image to disk if needed (skip oversized images)
-        if contentType == .image, let imageData, imageData.count <= Self.maxImageSize {
-            Task {
-                let itemId = UUID()
-                let imagePath = try? await ImageStorage.shared.saveImage(imageData, id: itemId)
-                self.saveClipItem(
-                    contentType: contentType, textContent: textContent,
-                    richContent: richContent, imagePath: imagePath,
-                    filePaths: filePaths, appBundleId: appBundleId, hash: hash
-                )
-            }
-        } else {
-            saveClipItem(
-                contentType: contentType, textContent: textContent,
-                richContent: richContent, imagePath: nil,
-                filePaths: filePaths, appBundleId: appBundleId, hash: hash
-            )
+        // Skip empty content
+        guard input.textContent != nil || input.filePaths != nil else { return }
+
+        do {
+            try ingestor.ingestContent(input)
+            playSoundIfEnabled()
+        } catch {
+            logger.error("Failed to save clip item: \(error.localizedDescription, privacy: .public)")
         }
     }
 
-    private func saveClipItem(
-        contentType: ContentType, textContent: String?,
-        richContent: Data?, imagePath: String?,
-        filePaths: [String]?, appBundleId: String?, hash: String
-    ) {
-        let item = ClipItem(
-            contentType: contentType,
-            textContent: textContent,
-            richContent: richContent,
-            imagePath: imagePath,
-            filePaths: ClipItem.encodeFilePaths(filePaths ?? []),
-            sourceAppId: appBundleId,
-            sourceAppName: ExclusionManager.frontmostAppName(),
-            hash: hash
-        )
-
-        do {
-            let saved = try clipItemStore.insert(item)
-            clipItemStore.prependItem(saved)
-            if playCopySound {
-                SoundManager.playCopySound()
-            }
-        } catch {
-            logger.error("Failed to save clip item: \(error.localizedDescription, privacy: .public)")
+    private func playSoundIfEnabled() {
+        if playCopySound {
+            SoundManager.playCopySound()
         }
     }
 }

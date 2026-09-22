@@ -14,6 +14,7 @@ final class AppState {
     // MARK: - Services
     let database: AppDatabase
     let clipItemStore: ClipItemStore
+    let clipIngestor: ClipIngestor
     let clipboardMonitor: ClipboardMonitor
     let exclusionManager: ExclusionManager
     let hotKeyManager: HotKeyManager
@@ -95,9 +96,10 @@ final class AppState {
 
         // Initialize services
         self.clipItemStore = ClipItemStore(database: database)
+        self.clipIngestor = ClipIngestor(store: clipItemStore)
         self.exclusionManager = ExclusionManager(database: database)
         self.clipboardMonitor = ClipboardMonitor(
-            clipItemStore: clipItemStore,
+            ingestor: clipIngestor,
             exclusionManager: exclusionManager
         )
         self.hotKeyManager = HotKeyManager()
