@@ -63,4 +63,42 @@ struct ClipItemStoreTests {
         #expect(touched.customTitle == "Renamed")
         #expect(try store.existingItem(hash: "h-stale")?.customTitle == "Renamed")
     }
+
+    @Test func fetchItemsFiltersByOrigin() throws {
+        try store.insert(ClipItem(contentType: .text, textContent: "copied", hash: "h1", origin: .clipboard))
+        let shot = try store.insert(ClipItem(contentType: .image, imagePath: "s.png", hash: "h2", origin: .screenshot))
+        try store.insert(ClipItem(contentType: .text, textContent: "legacy", hash: "h3"))
+
+        #expect(try store.fetchItems(origin: .screenshot).map(\.id) == [shot.id])
+    }
+
+    @Test func searchWithinOrigin() throws {
+        try store.insert(ClipItem(contentType: .text, textContent: "invoice text", hash: "h1", origin: .clipboard))
+        let shot = try store.insert(ClipItem(
+            contentType: .image, imagePath: "s.png", hash: "h2",
+            origin: .screenshot, ocrText: "invoice screenshot"
+        ))
+
+        #expect(try store.search(query: "invoice", origin: .screenshot).map(\.id) == [shot.id])
+        #expect(try store.search(query: "invoice", origin: nil).count == 2)
+    }
+
+    @Test func setSavedFilePathKeepsOtherFields() throws {
+        let item = try store.insert(ClipItem(contentType: .image, imagePath: "s.png", hash: "h", origin: .screenshot))
+        try store.updateCustomTitle(item, newTitle: "Chart")
+
+        try store.setSavedFilePath("/tmp/shot.png", for: item.id)
+
+        let loaded = try #require(try store.existingItem(hash: "h"))
+        #expect(loaded.savedFilePath == "/tmp/shot.png")
+        #expect(loaded.customTitle == "Chart")
+    }
+
+    @Test func pixelSizeTextAndScreenshotFlag() {
+        let shot = ClipItem(contentType: .image, hash: "h", origin: .screenshot, pixelWidth: 2880, pixelHeight: 1800)
+
+        #expect(shot.isScreenshot)
+        #expect(shot.pixelSizeText == "2880 × 1800")
+        #expect(ClipItem(contentType: .image, hash: "h2").pixelSizeText == nil)
+    }
 }

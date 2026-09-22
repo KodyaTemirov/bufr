@@ -200,6 +200,7 @@
 "contentType.text" = "Текст";
 "contentType.richText" = "Форматированный";
 "contentType.image" = "Изображение";
+"contentType.screenshot" = "Скриншот";
 "contentType.file" = "Файл";
 "contentType.url" = "Ссылка";
 "contentType.color" = "Цвет";

@@ -89,7 +89,18 @@ struct ClipItem: Identifiable, Equatable {
         if let title = customTitle, !title.isEmpty {
             return title
         }
+        if isScreenshot {
+            return L10n("contentType.screenshot")
+        }
         return contentType.displayName
+    }
+
+    var isScreenshot: Bool { origin == .screenshot }
+
+    /// "2880 × 1800" for images whose size is known
+    var pixelSizeText: String? {
+        guard let pixelWidth, let pixelHeight else { return nil }
+        return "\(pixelWidth) × \(pixelHeight)"
     }
 
     /// Copy suitable for another machine: drops paths that only make sense locally.

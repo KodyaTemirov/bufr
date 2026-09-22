@@ -21,6 +21,16 @@ final class ClipItemStore {
         }
     }
 
+    func fetchItems(origin: ClipOrigin, limit: Int = 200) throws -> [ClipItem] {
+        try database.dbQueue.read { db in
+            try ClipItem
+                .filter(ClipItem.Columns.origin == origin)
+                .order(ClipItem.Columns.createdAt.desc)
+                .limit(limit)
+                .fetchAll(db)
+        }
+    }
+
     func fetchItems(contentType: ContentType, limit: Int = 200) throws -> [ClipItem] {
         try database.dbQueue.read { db in
             try ClipItem
@@ -152,19 +162,34 @@ final class ClipItemStore {
     // MARK: - Search (FTS5)
 
     func search(query: String) throws -> [ClipItem] {
-        guard !query.isEmpty else { return items }
+        try search(query: query, origin: nil)
+    }
+
+    /// Full-text search, optionally limited to one origin (e.g. the Screenshots tab).
+    func search(query: String, origin: ClipOrigin?) throws -> [ClipItem] {
+        guard !query.isEmpty else {
+            if let origin { return try fetchItems(origin: origin) }
+            return items
+        }
 
         return try database.dbQueue.read { db in
             let pattern = FTS5Pattern(matchingAllPrefixesIn: query)
+            var arguments: StatementArguments = [pattern]
+            var originFilter = ""
+            if let origin {
+                originFilter = "WHERE clip_items.origin = ?"
+                arguments += [origin]
+            }
             let sql = """
                 SELECT clip_items.*
                 FROM clip_items
                 JOIN clip_items_fts ON clip_items_fts.rowid = clip_items.rowid
                     AND clip_items_fts MATCH ?
+                \(originFilter)
                 ORDER BY clip_items.created_at DESC
                 LIMIT 200
             """
-            return try ClipItem.fetchAll(db, sql: sql, arguments: [pattern])
+            return try ClipItem.fetchAll(db, sql: sql, arguments: arguments)
         }
     }
 
@@ -206,6 +231,17 @@ final class ClipItemStore {
             u.customTitle = (newTitle?.isEmpty == true) ? nil : newTitle
             try u.update(db)
             return u
+        }
+        updateItemInPlace(updated)
+    }
+
+    /// Only `saved_file_path` is written, so a stale copy can't revert other edits.
+    func setSavedFilePath(_ path: String?, for id: UUID) throws {
+        let updated = try database.dbQueue.write { db -> ClipItem in
+            try ClipItem
+                .filter(key: id)
+                .updateAll(db, ClipItem.Columns.savedFilePath.set(to: path))
+            return try ClipItem.find(db, key: id)
         }
         updateItemInPlace(updated)
     }

@@ -200,6 +200,7 @@
 "contentType.text" = "Matn";
 "contentType.richText" = "Formatlangan";
 "contentType.image" = "Rasm";
+"contentType.screenshot" = "Skrinshot";
 "contentType.file" = "Fayl";
 "contentType.url" = "Havola";
 "contentType.color" = "Rang";

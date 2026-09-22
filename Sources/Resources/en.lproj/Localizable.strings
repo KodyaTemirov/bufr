@@ -200,6 +200,7 @@
 "contentType.text" = "Text";
 "contentType.richText" = "Rich Text";
 "contentType.image" = "Image";
+"contentType.screenshot" = "Screenshot";
 "contentType.file" = "File";
 "contentType.url" = "Link";
 "contentType.color" = "Color";
