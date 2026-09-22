@@ -158,6 +158,9 @@ final class AppState {
         pins.onCopy = { [weak self] item in
             self?.copyItem(item)
         }
+        pins.onCopyText = { [weak self] item in
+            self?.copyRecognizedText(item)
+        }
         clipIngestor.onImageIngested = { [ocrIndexer] id in
             Task { await ocrIndexer.enqueue(id) }
         }
@@ -181,6 +184,9 @@ final class AppState {
                 },
                 reveal: { [weak self] item in
                     self?.screenshots.revealInFinder(item)
+                },
+                copyText: { [weak self] item in
+                    self?.copyRecognizedText(item)
                 }
             )
         )
@@ -306,6 +312,20 @@ final class AppState {
             try? await Task.sleep(for: .seconds(10))
             await indexer.warmUp()
             await indexer.startBackfill()
+        }
+    }
+
+    /// "Copy Text" on an image: uses the indexed text, recognizing it now if needed.
+    func copyRecognizedText(_ item: ClipItem) {
+        let indexer = ocrIndexer
+        Task {
+            let text = await indexer.recognizeNow(item.id) ?? ""
+            guard !text.isEmpty else {
+                ToastPresenter.show(L10n("toast.noText"), systemImage: "text.magnifyingglass")
+                return
+            }
+            PasteboardWriter.writeText(text)
+            ToastPresenter.show(L10n("toast.textCopied", text.count), systemImage: "text.viewfinder")
         }
     }
 

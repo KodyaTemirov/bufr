@@ -144,6 +144,9 @@ struct ClipCardView: View {
                     appState.hidePanel()
                     Task { await ImageExporter.saveAs(item) }
                 }
+                Button(L10n("card.copyText")) {
+                    appState.copyRecognizedText(item)
+                }
             }
 
             if item.savedFilePath != nil {

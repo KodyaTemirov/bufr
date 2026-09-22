@@ -72,6 +72,12 @@ actor OCRIndexer {
         return await process(id)
     }
 
+    /// Forgets every recognized text and starts over (e.g. after a Vision update).
+    func reindexAll() {
+        try? repository.resetAll()
+        start()
+    }
+
     func progress() -> OCRRepository.Progress? {
         try? repository.progress()
     }

@@ -123,6 +123,7 @@ final class ScreenPinView: NSView {
     override func menu(for event: NSEvent) -> NSMenu? {
         let menu = NSMenu()
         menu.addItem(item(L10n("card.copy"), #selector(copyPin)))
+        menu.addItem(item(L10n("card.copyText"), #selector(copyText)))
         menu.addItem(item(L10n("card.saveAs"), #selector(saveAs)))
         if panel?.manager?.canEdit == true {
             menu.addItem(item(L10n("card.annotate"), #selector(edit)))
@@ -156,6 +157,11 @@ final class ScreenPinView: NSView {
     @objc private func copyPin() {
         guard let panel else { return }
         panel.manager?.copy(panel)
+    }
+
+    @objc private func copyText() {
+        guard let panel else { return }
+        panel.manager?.copyText(panel)
     }
 
     @objc private func saveAs() {

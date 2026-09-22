@@ -308,3 +308,9 @@
 "hotkeys.action.captureText" = "Matnni aniqlash";
 "toast.noText" = "Matn topilmadi";
 "toast.textCopied" = "%d ta belgi nusxalandi";
+"card.copyText" = "Matnni nusxalash";
+"screenshots.ocr.header" = "Rasmlardagi matn";
+"screenshots.ocr.enabled" = "Qidiruv uchun matnni aniqlash";
+"screenshots.ocr.progress" = "%2$d ta rasmdan %1$d tasi aniqlandi";
+"screenshots.ocr.reindex" = "Hammasini qayta aniqlash";
+"screenshots.ocr.hint" = "Matn shu Mac'da aniqlanadi va hech qayerga yuborilmaydi. Paneldagi qidiruv skrinshotlar va nusxalangan rasmlardagi so'zlarni topadi.";

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ScreenshotSettingsView: View {
     @Environment(AppState.self) private var appState
+    @State private var ocrProgress: OCRRepository.Progress?
 
     var body: some View {
         @Bindable var settings = appState.screenshotSettings
@@ -82,6 +83,31 @@ struct ScreenshotSettingsView: View {
                     .foregroundStyle(.secondary)
             } header: {
                 Label(L10n("screenshots.capture.header"), systemImage: "camera.viewfinder")
+            }
+
+            Section {
+                Toggle(L10n("screenshots.ocr.enabled"), isOn: $settings.ocrIndexingEnabled)
+                if let ocrProgress, ocrProgress.total > 0 {
+                    Text(L10n("screenshots.ocr.progress", ocrProgress.done, ocrProgress.total))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Button(L10n("screenshots.ocr.reindex")) {
+                    Task {
+                        await appState.ocrIndexer.reindexAll()
+                        ocrProgress = await appState.ocrIndexer.progress()
+                    }
+                }
+                .disabled(!settings.ocrIndexingEnabled)
+                Text(L10n("screenshots.ocr.hint"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Label(L10n("screenshots.ocr.header"), systemImage: "text.viewfinder")
+            }
+            .task(id: settings.ocrIndexingEnabled) {
+                await appState.ocrIndexer.setEnabled(settings.ocrIndexingEnabled)
+                ocrProgress = await appState.ocrIndexer.progress()
             }
 
             Section {

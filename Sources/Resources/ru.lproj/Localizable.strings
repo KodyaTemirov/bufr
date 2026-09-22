@@ -308,3 +308,9 @@
 "hotkeys.action.captureText" = "Распознать текст";
 "toast.noText" = "Текст не найден";
 "toast.textCopied" = "Скопировано символов: %d";
+"card.copyText" = "Скопировать текст";
+"screenshots.ocr.header" = "Текст на картинках";
+"screenshots.ocr.enabled" = "Распознавать текст для поиска";
+"screenshots.ocr.progress" = "Распознано картинок: %d из %d";
+"screenshots.ocr.reindex" = "Распознать всё заново";
+"screenshots.ocr.hint" = "Текст распознаётся на этом Mac и никуда не отправляется. Поиск в панели находит слова на скриншотах и скопированных картинках.";

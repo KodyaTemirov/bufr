@@ -43,6 +43,7 @@ struct QuickAccessCardView: View {
             Button(L10n("card.copy")) { copy() }
             Button(L10n("card.saveAs")) { saveAs() }
             Button(L10n("card.pin")) { pin() }
+            Button(L10n("card.copyText")) { actions.copyText(entry.item) }
             if entry.item.savedFilePath != nil {
                 Button(L10n("card.showInFinder")) { actions.reveal(entry.item) }
             }
@@ -73,6 +74,7 @@ struct QuickAccessCardView: View {
                         cornerButton("folder", help: L10n("card.showInFinder")) { actions.reveal(entry.item) }
                     }
                     Spacer()
+                    cornerButton("text.viewfinder", help: L10n("card.copyText")) { actions.copyText(entry.item) }
                 }
             }
             .padding(6)

@@ -8,6 +8,7 @@ final class ScreenPinManager {
 
     /// Copies an item the same way the rest of the app does (moves it to the top of history)
     @ObservationIgnored var onCopy: (ClipItem) -> Void = { _ in }
+    @ObservationIgnored var onCopyText: (ClipItem) -> Void = { _ in }
     /// Opens the annotation editor (M4); nil hides "Annotate"
     @ObservationIgnored var onEdit: ((ClipItem) -> Void)?
 
@@ -67,6 +68,10 @@ final class ScreenPinManager {
     func copy(_ panel: ScreenPinPanel) {
         onCopy(panel.item)
         ToastPresenter.show(L10n("toast.copied"))
+    }
+
+    func copyText(_ panel: ScreenPinPanel) {
+        onCopyText(panel.item)
     }
 
     func edit(_ panel: ScreenPinPanel) {

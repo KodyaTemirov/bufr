@@ -308,3 +308,9 @@
 "hotkeys.action.captureText" = "Capture Text";
 "toast.noText" = "No text found";
 "toast.textCopied" = "Copied %d characters";
+"card.copyText" = "Copy Text";
+"screenshots.ocr.header" = "Text in Images";
+"screenshots.ocr.enabled" = "Recognize text so search finds it";
+"screenshots.ocr.progress" = "Recognized %d of %d images";
+"screenshots.ocr.reindex" = "Recognize All Again";
+"screenshots.ocr.hint" = "Text is recognized on this Mac and never leaves it. Searching the panel then finds words inside screenshots and copied images.";
