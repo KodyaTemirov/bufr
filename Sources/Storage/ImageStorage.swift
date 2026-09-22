@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 
 actor ImageStorage {
-    static let shared = ImageStorage()
+    static let shared = ImageStorage(baseDirectory: AppPaths.support)
 
     private let imagesDir: URL
     private let thumbnailsDir: URL
@@ -12,13 +12,9 @@ actor ImageStorage {
         return cache
     }()
 
-    private init() {
-        let support = FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Bufr", isDirectory: true)
-
-        imagesDir = support.appendingPathComponent("images", isDirectory: true)
-        thumbnailsDir = support.appendingPathComponent("thumbnails", isDirectory: true)
+    init(baseDirectory: URL) {
+        imagesDir = baseDirectory.appendingPathComponent("images", isDirectory: true)
+        thumbnailsDir = baseDirectory.appendingPathComponent("thumbnails", isDirectory: true)
 
         try? FileManager.default.createDirectory(at: imagesDir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         try? FileManager.default.createDirectory(at: thumbnailsDir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
@@ -75,12 +71,25 @@ actor ImageStorage {
 
     // MARK: - Delete
 
-    func deleteImage(filename: String, id: UUID) {
-        guard isValidFilename(filename) else { return }
-        let imageURL = imagesDir.appendingPathComponent(filename)
-        let thumbURL = thumbnailsDir.appendingPathComponent("\(id.uuidString)_thumb.png")
-        try? FileManager.default.removeItem(at: imageURL)
-        try? FileManager.default.removeItem(at: thumbURL)
+    /// Removes an item's image and thumbnail. Rows created before 3.0 used a different UUID
+    /// for the file than for the item, so thumbnails for both UUIDs are removed.
+    func deleteAssets(imagePath: String?, itemId: UUID) {
+        var ids: Set<UUID> = [itemId]
+        if let imagePath, isValidFilename(imagePath) {
+            try? FileManager.default.removeItem(at: imagesDir.appendingPathComponent(imagePath))
+            if let fileId = Self.uuid(fromImagePath: imagePath) {
+                ids.insert(fileId)
+            }
+        }
+        for id in ids {
+            try? FileManager.default.removeItem(at: thumbnailsDir.appendingPathComponent("\(id.uuidString)_thumb.png"))
+            thumbnailCache.removeObject(forKey: id.uuidString as NSString)
+        }
+    }
+
+    /// "<uuid>.png" → uuid
+    nonisolated static func uuid(fromImagePath imagePath: String) -> UUID? {
+        UUID(uuidString: (imagePath as NSString).deletingPathExtension)
     }
 
     func deleteAllImages() {

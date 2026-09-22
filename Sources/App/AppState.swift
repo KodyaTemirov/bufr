@@ -233,7 +233,7 @@ final class AppState {
         do {
             if let imagePath = item.imagePath {
                 Task {
-                    await ImageStorage.shared.deleteImage(filename: imagePath, id: item.id)
+                    await ImageStorage.shared.deleteAssets(imagePath: imagePath, itemId: item.id)
                 }
             }
             try clipItemStore.delete(item)

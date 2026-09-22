@@ -110,7 +110,7 @@ final class ClipItemStore {
         if !imageRefs.isEmpty {
             Task {
                 for (path, id) in imageRefs {
-                    await ImageStorage.shared.deleteImage(filename: path, id: id)
+                    await ImageStorage.shared.deleteAssets(imagePath: path, itemId: id)
                 }
             }
         }
@@ -142,7 +142,7 @@ final class ClipItemStore {
         if !imageRefs.isEmpty {
             Task {
                 for (path, id) in imageRefs {
-                    await ImageStorage.shared.deleteImage(filename: path, id: id)
+                    await ImageStorage.shared.deleteAssets(imagePath: path, itemId: id)
                 }
             }
         }

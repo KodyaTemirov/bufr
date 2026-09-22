@@ -7,9 +7,7 @@ final class AppDatabase: Sendable {
     /// Production initializer — creates DB file in Application Support
     static let shared: AppDatabase = {
         do {
-            let folderURL = FileManager.default
-                .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-                .appendingPathComponent("Bufr", isDirectory: true)
+            let folderURL = AppPaths.support
 
             try FileManager.default.createDirectory(
                 at: folderURL,
