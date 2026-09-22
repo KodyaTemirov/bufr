@@ -142,6 +142,9 @@ final class AppState {
         screenshots.prepareForCapture = { [weak self] in
             self?.hidePanel()
         }
+        screenshots.showPermissionGuide = {
+            PermissionGuideWindowController.shared.show()
+        }
 
         // Panel close callback
         panelManager.onPanelClose = { [weak self] in

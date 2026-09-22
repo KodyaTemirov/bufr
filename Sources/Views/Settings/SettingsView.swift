@@ -2,6 +2,7 @@ import SwiftUI
 
 enum SettingsTab: String, CaseIterable, Identifiable {
     case general
+    case screenshots
     case hotkeys
     case exclusions
     case updates
@@ -12,6 +13,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .general: L10n("settings.tab.general")
+        case .screenshots: L10n("settings.tab.screenshots")
         case .hotkeys: L10n("settings.tab.hotkeys")
         case .exclusions: L10n("settings.tab.exclusions")
         case .updates: L10n("settings.tab.updates")
@@ -22,6 +24,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .general: "gear"
+        case .screenshots: "camera.viewfinder"
         case .hotkeys: "keyboard"
         case .exclusions: "eye.slash"
         case .updates: "arrow.triangle.2.circlepath"
@@ -58,6 +61,8 @@ struct SettingsView: View {
                 switch selection.tab {
                 case .general:
                     GeneralSettingsView()
+                case .screenshots:
+                    ScreenshotSettingsView()
                 case .hotkeys:
                     HotKeySettingsView()
                 case .exclusions:

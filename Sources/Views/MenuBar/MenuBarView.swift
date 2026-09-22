@@ -8,6 +8,25 @@ struct MenuBarView: View {
         // Reading appLanguage forces SwiftUI to re-render on language change
         let _ = appState.appLanguage
         VStack(spacing: 0) {
+            ForEach(Self.captureActions, id: \.action) { entry in
+                Button(L10n(entry.action.titleKey)) {
+                    AppState.shared.screenshots.capture(entry.mode, afterMenuCloses: true)
+                }
+                .keyboardShortcut(menuShortcut(for: entry.action))
+            }
+
+            Button(L10n("menubar.capture.openFolder")) {
+                AppState.shared.screenshots.openScreenshotsFolder()
+            }
+
+            if appState.permissions.screenCapture != .granted {
+                Button(L10n("menubar.capture.permission")) {
+                    PermissionGuideWindowController.shared.show()
+                }
+            }
+
+            Divider()
+
             Button(L10n("menubar.openPanel")) {
                 AppState.shared.togglePanel()
             }
@@ -68,7 +87,22 @@ struct MenuBarView: View {
         }
         .onAppear {
             menuItems = Array(AppState.shared.clipItemStore.items.prefix(10))
+            AppState.shared.permissions.refresh()
         }
+    }
+
+    private static let captureActions: [(action: HotKeyAction, mode: CaptureMode)] = [
+        (.captureArea, .area),
+        (.captureWindow, .window),
+        (.captureFullscreen, .fullscreen),
+        (.capturePreviousArea, .previousArea),
+    ]
+
+    /// A shortcut macOS still owns would be misleading next to the item
+    private func menuShortcut(for action: HotKeyAction) -> KeyboardShortcut? {
+        let manager = appState.hotKeyManager
+        guard !manager.blockedBySystem.contains(action) else { return nil }
+        return manager.bindings[action]?.keyboardShortcut
     }
 }
 

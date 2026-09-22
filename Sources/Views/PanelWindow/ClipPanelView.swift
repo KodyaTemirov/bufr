@@ -6,6 +6,8 @@ struct ClipPanelView: View {
     @State private var searchQuery: String = ""
     @State private var searchResults: [ClipItem]?
     @State private var selectedBoardId: UUID?
+    @State private var showingScreenshots = false
+    @State private var screenshotItems: [ClipItem] = []
     @State private var showQuickPreview = false
     @State private var showCreateSheet = false
     @State private var showKeyHints = false
@@ -112,6 +114,9 @@ struct ClipPanelView: View {
         }
         .onChange(of: appState.clipItemStore.items) {
             guard appState.isPanelVisible else { return }
+            if showingScreenshots {
+                reloadScreenshots()
+            }
             performSearch()
             selectedIndex = 0
         }
@@ -236,9 +241,17 @@ struct ClipPanelView: View {
             BoardTabButton(
                 label: L10n("panel.clipboard"),
                 systemImage: "clipboard",
-                isSelected: selectedBoardId == nil,
+                isSelected: isClipboardSelected,
                 compact: true,
                 action: { selectClipboard() }
+            )
+
+            BoardTabButton(
+                label: L10n("panel.screenshots"),
+                systemImage: "camera.viewfinder",
+                isSelected: showingScreenshots,
+                compact: true,
+                action: { selectScreenshots() }
             )
 
             ForEach(appState.pinboardStore.pinboards) { board in
@@ -309,8 +322,15 @@ struct ClipPanelView: View {
         BoardTabButton(
             label: L10n("panel.clipboard"),
             systemImage: "clipboard",
-            isSelected: selectedBoardId == nil,
+            isSelected: isClipboardSelected,
             action: { selectClipboard() }
+        )
+
+        BoardTabButton(
+            label: L10n("panel.screenshots"),
+            systemImage: "camera.viewfinder",
+            isSelected: showingScreenshots,
+            action: { selectScreenshots() }
         )
 
         ForEach(appState.pinboardStore.pinboards) { board in
@@ -436,8 +456,14 @@ struct ClipPanelView: View {
         if selectedBoardId != nil {
             return appState.pinboardStore.currentBoardItems
         }
-
+        if showingScreenshots {
+            return searchResults ?? screenshotItems
+        }
         return searchResults ?? appState.clipItemStore.items
+    }
+
+    private var isClipboardSelected: Bool {
+        selectedBoardId == nil && !showingScreenshots
     }
 
     // MARK: - Search
@@ -447,7 +473,10 @@ struct ClipPanelView: View {
         if searchQuery.isEmpty {
             searchResults = nil
         } else {
-            searchResults = try? appState.clipItemStore.search(query: searchQuery)
+            searchResults = try? appState.clipItemStore.search(
+                query: searchQuery,
+                origin: showingScreenshots ? .screenshot : nil
+            )
         }
     }
 
@@ -455,11 +484,26 @@ struct ClipPanelView: View {
 
     private func selectClipboard() {
         selectedBoardId = nil
+        showingScreenshots = false
+        performSearch()
         selectedIndex = 0
+    }
+
+    private func selectScreenshots() {
+        selectedBoardId = nil
+        showingScreenshots = true
+        reloadScreenshots()
+        performSearch()
+        selectedIndex = 0
+    }
+
+    private func reloadScreenshots() {
+        screenshotItems = (try? appState.clipItemStore.fetchItems(origin: .screenshot)) ?? []
     }
 
     private func selectBoard(_ id: UUID) {
         selectedBoardId = id
+        showingScreenshots = false
         selectedIndex = 0
         Task.detached { @MainActor in
             try? appState.pinboardStore.fetchClips(for: id)
@@ -536,18 +580,34 @@ struct ClipPanelView: View {
 
     private var emptyState: some View {
         VStack(spacing: 12) {
-            Image(systemName: selectedBoardId != nil ? "tray" : (searchQuery.isEmpty ? "clipboard" : "magnifyingglass"))
+            Image(systemName: emptyStateContent.icon)
                 .font(.system(size: 36))
                 .foregroundStyle(.tertiary)
-            Text(selectedBoardId != nil ? L10n("panel.empty.board") : (searchQuery.isEmpty ? L10n("panel.empty.history") : L10n("panel.empty.noResults")))
+            Text(emptyStateContent.title)
                 .font(.system(.title3, design: .rounded, weight: .medium))
                 .foregroundStyle(.secondary)
-            Text(selectedBoardId != nil ? L10n("panel.empty.board.hint") : (searchQuery.isEmpty ? L10n("panel.empty.history.hint") : L10n("panel.empty.noResults.hint")))
+            Text(emptyStateContent.hint)
                 .font(.system(.subheadline, design: .rounded))
                 .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 180)
+    }
+
+    private var emptyStateContent: (icon: String, title: String, hint: String) {
+        if selectedBoardId != nil {
+            return ("tray", L10n("panel.empty.board"), L10n("panel.empty.board.hint"))
+        }
+        if !searchQuery.isEmpty {
+            return ("magnifyingglass", L10n("panel.empty.noResults"), L10n("panel.empty.noResults.hint"))
+        }
+        if showingScreenshots {
+            let hint = appState.hotKeyManager.bindings[.captureArea].map {
+                L10n("panel.empty.screenshots.hint", $0.displayString)
+            } ?? L10n("panel.empty.screenshots.hintNoShortcut")
+            return ("camera.viewfinder", L10n("panel.empty.screenshots"), hint)
+        }
+        return ("clipboard", L10n("panel.empty.history"), L10n("panel.empty.history.hint"))
     }
 
     private func keyHint(_ key: String, label: String) -> some View {

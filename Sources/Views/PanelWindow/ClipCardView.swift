@@ -135,6 +135,12 @@ struct ClipCardView: View {
                 onRename?(item)
             }
 
+            if item.savedFilePath != nil {
+                Button(L10n("card.showInFinder")) {
+                    appState.screenshots.revealInFinder(item)
+                }
+            }
+
             Divider()
 
             Button(L10n("common.delete"), role: .destructive) {
@@ -180,10 +186,17 @@ struct ClipCardView: View {
         HStack(spacing: 8) {
             // Type name + time
             VStack(alignment: .leading, spacing: 1) {
-                Text(item.displayTitle)
-                    .font(.system(.body, design: .rounded, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
+                HStack(spacing: 4) {
+                    if item.isScreenshot {
+                        Image(systemName: "camera.viewfinder")
+                            .font(.system(.caption, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.85))
+                    }
+                    Text(item.displayTitle)
+                        .font(.system(.body, design: .rounded, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                }
 
                 Text(relativeTime)
                     .font(.system(.subheadline, design: .rounded))
@@ -243,7 +256,7 @@ struct ClipCardView: View {
             guard let text = item.textContent else { return nil }
             return L10n("card.characters", text.count)
         case .image:
-            return nil
+            return item.pixelSizeText
         case .url:
             return item.textContent
         case .file:
