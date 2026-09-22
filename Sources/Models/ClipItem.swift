@@ -15,6 +15,12 @@ struct ClipItem: Identifiable, Equatable {
     var isFavorite: Bool
     var hash: String
     var customTitle: String?
+    var origin: ClipOrigin?
+    var ocrText: String?          // nil = not recognized yet, "" = recognized, no text
+    var annotationPath: String?   // "<uuid>.annotations.json" (editor layers)
+    var savedFilePath: String?    // absolute path of the copy in the user's screenshot folder
+    var pixelWidth: Int?
+    var pixelHeight: Int?
 
     init(
         id: UUID = UUID(),
@@ -29,7 +35,13 @@ struct ClipItem: Identifiable, Equatable {
         isPinned: Bool = false,
         isFavorite: Bool = false,
         hash: String,
-        customTitle: String? = nil
+        customTitle: String? = nil,
+        origin: ClipOrigin? = nil,
+        ocrText: String? = nil,
+        annotationPath: String? = nil,
+        savedFilePath: String? = nil,
+        pixelWidth: Int? = nil,
+        pixelHeight: Int? = nil
     ) {
         self.id = id
         self.contentType = contentType
@@ -44,6 +56,12 @@ struct ClipItem: Identifiable, Equatable {
         self.isFavorite = isFavorite
         self.hash = hash
         self.customTitle = customTitle
+        self.origin = origin
+        self.ocrText = ocrText
+        self.annotationPath = annotationPath
+        self.savedFilePath = savedFilePath
+        self.pixelWidth = pixelWidth
+        self.pixelHeight = pixelHeight
     }
 
     var filePathsArray: [String] {
@@ -73,6 +91,14 @@ struct ClipItem: Identifiable, Equatable {
         }
         return contentType.displayName
     }
+
+    /// Copy suitable for another machine: drops paths that only make sense locally.
+    func withoutLocalPaths() -> ClipItem {
+        var copy = self
+        copy.annotationPath = nil
+        copy.savedFilePath = nil
+        return copy
+    }
 }
 
 // MARK: - GRDB
@@ -94,6 +120,12 @@ extension ClipItem: Codable, FetchableRecord, PersistableRecord {
         case isFavorite = "is_favorite"
         case hash
         case customTitle = "custom_title"
+        case origin
+        case ocrText = "ocr_text"
+        case annotationPath = "annotation_path"
+        case savedFilePath = "saved_file_path"
+        case pixelWidth = "pixel_width"
+        case pixelHeight = "pixel_height"
     }
 
     enum CodingKeys: String, CodingKey {
@@ -110,5 +142,11 @@ extension ClipItem: Codable, FetchableRecord, PersistableRecord {
         case isFavorite = "is_favorite"
         case hash
         case customTitle = "custom_title"
+        case origin
+        case ocrText = "ocr_text"
+        case annotationPath = "annotation_path"
+        case savedFilePath = "saved_file_path"
+        case pixelWidth = "pixel_width"
+        case pixelHeight = "pixel_height"
     }
 }

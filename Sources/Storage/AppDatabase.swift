@@ -45,7 +45,8 @@ final class AppDatabase: Sendable {
 
     // MARK: - Migrations
 
-    private static var migrator: DatabaseMigrator {
+    /// Internal so tests can migrate a database step by step.
+    static var migrator: DatabaseMigrator {
         var migrator = DatabaseMigrator()
 
         #if DEBUG
@@ -146,6 +147,43 @@ final class AppDatabase: Sendable {
                 on: "pinboard_items",
                 columns: ["clip_id"]
             )
+        }
+
+        migrator.registerMigration("v4_screenshotsAndOCR") { db in
+            try db.alter(table: "clip_items") { t in
+                t.add(column: "origin", .text)            // NULL = pre-3.0 clipboard row
+                t.add(column: "ocr_text", .text)          // NULL = pending, "" = no text
+                t.add(column: "annotation_path", .text)
+                t.add(column: "saved_file_path", .text)
+                t.add(column: "pixel_width", .integer)
+                t.add(column: "pixel_height", .integer)
+            }
+
+            try db.create(
+                index: "idx_clip_items_origin_created_at",
+                on: "clip_items",
+                columns: ["origin", "created_at"]
+            )
+            // Lets the OCR indexer find pending images without a table scan
+            try db.execute(sql: """
+                CREATE INDEX idx_clip_items_ocr_pending ON clip_items(created_at)
+                WHERE content_type = 'image' AND ocr_text IS NULL
+                """)
+
+            // Rebuild FTS5 with ocr_text (same procedure as v2_addCustomTitle)
+            try db.execute(sql: "DROP TRIGGER IF EXISTS __clip_items_fts_ai")
+            try db.execute(sql: "DROP TRIGGER IF EXISTS __clip_items_fts_ad")
+            try db.execute(sql: "DROP TRIGGER IF EXISTS __clip_items_fts_au")
+            try db.drop(table: "clip_items_fts")
+
+            try db.create(virtualTable: "clip_items_fts", using: FTS5()) { t in
+                t.synchronize(withTable: "clip_items")
+                t.tokenizer = .unicode61()
+                t.column("text_content")
+                t.column("source_app_name")
+                t.column("custom_title")
+                t.column("ocr_text")
+            }
         }
 
         return migrator

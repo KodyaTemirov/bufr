@@ -24,5 +24,10 @@ let package = Package(
                 .process("Resources")
             ]
         ),
+        .testTarget(
+            name: "BufrTests",
+            dependencies: ["Bufr"],
+            path: "Tests/BufrTests"
+        ),
     ]
 )

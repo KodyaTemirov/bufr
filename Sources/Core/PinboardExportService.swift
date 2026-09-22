@@ -270,10 +270,14 @@ enum PinboardExportService {
                         isPinned: clip.isPinned,
                         isFavorite: clip.isFavorite,
                         hash: clip.hash,
-                        customTitle: clip.customTitle
+                        customTitle: clip.customTitle,
+                        origin: clip.origin,
+                        ocrText: clip.ocrText,
+                        pixelWidth: clip.pixelWidth,
+                        pixelHeight: clip.pixelHeight
                     )
                 } else {
-                    clipToInsert = clip
+                    clipToInsert = clip.withoutLocalPaths()
                 }
 
                 try insertClip(clipToInsert, database: database)
@@ -484,10 +488,14 @@ enum PinboardExportService {
                         isPinned: clip.isPinned,
                         isFavorite: clip.isFavorite,
                         hash: clip.hash,
-                        customTitle: clip.customTitle
+                        customTitle: clip.customTitle,
+                        origin: clip.origin,
+                        ocrText: clip.ocrText,
+                        pixelWidth: clip.pixelWidth,
+                        pixelHeight: clip.pixelHeight
                     )
                 } else {
-                    clipToInsert = clip
+                    clipToInsert = clip.withoutLocalPaths()
                 }
 
                 try insertClip(clipToInsert, database: database)
