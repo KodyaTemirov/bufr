@@ -136,6 +136,17 @@ struct ClipCardView: View {
             }
 
             if item.contentType == .image {
+                Button(L10n("card.annotate")) {
+                    appState.annotate(item)
+                }
+                if item.annotationPath != nil {
+                    Button(L10n("card.revert")) {
+                        Task { try? await appState.annotationStore.revert(item) }
+                    }
+                    Button(L10n("card.flatten")) {
+                        Task { try? await appState.annotationStore.flatten(item) }
+                    }
+                }
                 Button(L10n("card.pin")) {
                     appState.hidePanel()
                     Task { await appState.pins.pin(item) }
@@ -247,6 +258,7 @@ struct ClipCardView: View {
                 .padding(.bottom, 4)
         case .image:
             ImageCardContent(imagePath: item.imagePath, itemId: item.id)
+                .id(item.hash) // reload the thumbnail after an edit
         case .url:
             URLCardContent(text: item.textContent ?? "")
                 .padding(.horizontal, 12)

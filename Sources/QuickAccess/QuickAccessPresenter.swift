@@ -7,6 +7,7 @@ struct QuickAccessActions {
     var pin: (QuickAccessEntry) -> Void
     var reveal: (ClipItem) -> Void
     var copyText: (ClipItem) -> Void
+    var annotate: (ClipItem) -> Void
 }
 
 /// Shows the Quick Access stack in a corner of the screen where the capture happened.

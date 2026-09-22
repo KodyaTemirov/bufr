@@ -26,6 +26,8 @@ final class AppState {
     let pins: ScreenPinManager
     let quickAccess: QuickAccessController
     let ocrIndexer: OCRIndexer
+    let annotationStore: AnnotationStore
+    private let editors: EditorWindowManager
     private var quickAccessPresenter: QuickAccessPresenter?
     var updater: AppUpdater
 
@@ -119,6 +121,8 @@ final class AppState {
         )
         self.pins = ScreenPinManager()
         self.ocrIndexer = OCRIndexer(repository: OCRRepository(database: database), imageStorage: .shared)
+        self.annotationStore = AnnotationStore(store: clipItemStore)
+        self.editors = EditorWindowManager(store: annotationStore, pins: pins)
         self.quickAccess = QuickAccessController(autoCloseDelay: { [screenshotSettings] in
             let seconds = screenshotSettings.quickAccessAutoClose
             return seconds > 0 ? .seconds(seconds) : nil
@@ -161,6 +165,18 @@ final class AppState {
         pins.onCopyText = { [weak self] item in
             self?.copyRecognizedText(item)
         }
+        pins.onEdit = { [weak self] item in
+            self?.annotate(item)
+        }
+        annotationStore.onEdited = { [weak self] item in
+            guard let self else { return }
+            quickAccess.update(item)
+            let pins = pins, indexer = ocrIndexer
+            Task {
+                await pins.refresh(item)
+                await indexer.enqueue(item.id) // text may have changed (e.g. pixelated)
+            }
+        }
         clipIngestor.onImageIngested = { [ocrIndexer] id in
             Task { await ocrIndexer.enqueue(id) }
         }
@@ -187,6 +203,9 @@ final class AppState {
                 },
                 copyText: { [weak self] item in
                     self?.copyRecognizedText(item)
+                },
+                annotate: { [weak self] item in
+                    self?.annotate(item)
                 }
             )
         )
@@ -315,6 +334,14 @@ final class AppState {
         }
     }
 
+    // MARK: - Editor
+
+    func annotate(_ item: ClipItem) {
+        guard item.contentType == .image else { return }
+        hidePanel()
+        editors.open(item)
+    }
+
     /// "Copy Text" on an image: uses the indexed text, recognizing it now if needed.
     func copyRecognizedText(_ item: ClipItem) {
         let indexer = ocrIndexer
@@ -341,6 +368,8 @@ final class AppState {
             ))
         case .pin:
             Task { await pins.pin(item, sourceRect: outcome.screenRect) }
+        case .editor:
+            annotate(item)
         case .nothing:
             break
         }

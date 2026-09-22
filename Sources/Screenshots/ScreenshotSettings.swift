@@ -3,6 +3,7 @@ import Observation
 
 enum AfterCaptureAction: String, CaseIterable, Sendable {
     case quickAccess
+    case editor
     case pin
     case nothing
 }

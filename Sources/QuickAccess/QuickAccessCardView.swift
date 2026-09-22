@@ -41,6 +41,7 @@ struct QuickAccessCardView: View {
         }
         .contextMenu {
             Button(L10n("card.copy")) { copy() }
+            Button(L10n("card.annotate")) { annotate() }
             Button(L10n("card.saveAs")) { saveAs() }
             Button(L10n("card.pin")) { pin() }
             Button(L10n("card.copyText")) { actions.copyText(entry.item) }
@@ -59,6 +60,7 @@ struct QuickAccessCardView: View {
 
             VStack(spacing: 6) {
                 pillButton(L10n("card.copy"), action: copy)
+                pillButton(L10n("card.annotate"), action: annotate)
                 pillButton(L10n("card.saveAs"), action: saveAs)
             }
 
@@ -111,6 +113,11 @@ struct QuickAccessCardView: View {
 
     private func saveAs() {
         Task { await ImageExporter.saveAs(entry.item) }
+    }
+
+    private func annotate() {
+        actions.annotate(entry.item)
+        controller.dismiss(entry.id)
     }
 
     private func pin() {
