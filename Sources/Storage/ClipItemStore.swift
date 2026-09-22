@@ -33,23 +33,43 @@ final class ClipItemStore {
 
     // MARK: - Insert (with deduplication)
 
+    func existingItem(hash: String) throws -> ClipItem? {
+        try database.dbQueue.read { db in
+            try ClipItem
+                .filter(ClipItem.Columns.hash == hash)
+                .fetchOne(db)
+        }
+    }
+
+    /// Inserts `item`. With `deduplicate`, an item with the same hash is brought to the top
+    /// (its `createdAt` is bumped) and returned instead of inserting a copy.
     @discardableResult
-    func insert(_ item: ClipItem) throws -> ClipItem {
+    func insert(_ item: ClipItem, deduplicate: Bool = true) throws -> ClipItem {
         try database.dbQueue.write { db in
-            // Check for duplicate by hash
-            if var existing = try ClipItem
+            if deduplicate, var existing = try ClipItem
                 .filter(ClipItem.Columns.hash == item.hash)
                 .fetchOne(db) {
-                // Update timestamp to bring it to top
                 existing.createdAt = Date()
                 try existing.update(db)
                 return existing
             }
 
-            let newItem = item
-            try newItem.insert(db)
-            return newItem
+            try item.insert(db)
+            return item
         }
+    }
+
+    /// Moves an existing item to the top of the history.
+    @discardableResult
+    func touch(_ item: ClipItem) throws -> ClipItem {
+        let touched = try database.dbQueue.write { db -> ClipItem in
+            var updated = item
+            updated.createdAt = Date()
+            try updated.update(db)
+            return updated
+        }
+        prependItem(touched)
+        return touched
     }
 
     // MARK: - Delete
