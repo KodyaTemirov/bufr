@@ -46,6 +46,8 @@ Core/         → Clipboard polling, ClipIngestor (single write path into histor
 Models/       → ClipItem, ClipOrigin, Pinboard, ContentType, HotKeyAction/Binding
 Storage/      → GRDB migrations, stores, ImageStorage (images, thumbnails, editor sidecars), AppPaths
 Capture/      → ScreenCaptureKit wrapper, capture session, overlay (freeze frame, selection, loupe), geometry
+                Scrolling/ — scrolling capture: SCStream frames → ScrollStitcher (sticky header/footer aware),
+                auto-scroll, live panels
 Screenshots/  → ScreenshotCoordinator (capture → PNG → history → folder → clipboard), settings, file naming
 QuickAccess/  → Thumbnail stack after a capture
 ScreenPin/    → Screenshots pinned above all windows
