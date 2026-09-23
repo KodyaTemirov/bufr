@@ -16,7 +16,7 @@
 "general.retention.clear" = "Tarixni o'chirish...";
 "general.retention.confirm.title" = "Tarixni o'chirish?";
 "general.retention.confirm.action" = "O'chirish";
-"general.retention.confirm.message" = "Barcha nusxalash tarixi o'chiriladi.";
+"general.retention.confirm.message" = "Barcha nusxalash tarixi o'chiriladi. Doskalardagi yozuvlar saqlanib qoladi.";
 
 /* General Settings - Language */
 "general.language.header" = "Til";

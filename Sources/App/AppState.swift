@@ -303,13 +303,27 @@ final class AppState {
 
     // MARK: - History
 
+    /// Items on a board stay.
     func clearHistory() {
+        Task {
+            do {
+                try await clipItemStore.clearHistory()
+                try clipItemStore.fetchItems()
+            } catch {
+                logger.error("Failed to clear history: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
+    /// History, boards and every image.
+    func deleteEverything() {
+        deleteAllBoards()
         do {
             try clipItemStore.deleteAll()
             Task { await ImageStorage.shared.deleteAllImages() }
             try clipItemStore.fetchItems()
         } catch {
-            logger.error("Failed to clear history: \(error.localizedDescription, privacy: .public)")
+            logger.error("Failed to delete everything: \(error.localizedDescription, privacy: .public)")
         }
     }
 

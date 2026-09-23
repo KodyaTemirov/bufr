@@ -48,8 +48,7 @@ struct AboutSettingsView: View {
         .formStyle(.grouped)
         .confirmationDialog(L10n("about.deleteAll.confirm.title"), isPresented: $confirmDeleteAll, titleVisibility: .visible) {
             Button(L10n("about.deleteAll.confirm.action"), role: .destructive) {
-                appState.deleteAllBoards()
-                appState.clearHistory()
+                appState.deleteEverything()
             }
         } message: {
             Text(L10n("about.deleteAll.confirm.message"))

@@ -16,7 +16,7 @@
 "general.retention.clear" = "Clear History...";
 "general.retention.confirm.title" = "Clear History?";
 "general.retention.confirm.action" = "Clear";
-"general.retention.confirm.message" = "All clipboard history will be deleted.";
+"general.retention.confirm.message" = "All clipboard history will be deleted. Items on boards are kept.";
 
 /* General Settings - Language */
 "general.language.header" = "Language";

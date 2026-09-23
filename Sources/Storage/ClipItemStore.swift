@@ -5,9 +5,11 @@ import GRDB
 final class ClipItemStore {
     private(set) var items: [ClipItem] = []
     private let database: AppDatabase
+    private let imageStorage: ImageStorage
 
-    init(database: AppDatabase) {
+    init(database: AppDatabase, imageStorage: ImageStorage = .shared) {
         self.database = database
+        self.imageStorage = imageStorage
     }
 
     // MARK: - Fetch
@@ -103,65 +105,38 @@ final class ClipItemStore {
         }
     }
 
+    /// "Clear history": everything the history cleanup may remove, with its image files.
+    func clearHistory() async throws {
+        let removed = try deleteRemovable(Self.removable)
+        await deleteAssets(of: removed)
+    }
+
     func deleteOlderThan(days: Int) throws {
         let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date())!
-        let imageRefs = try database.dbQueue.write { db -> [(String, UUID)] in
-            let itemsToDelete = try ClipItem
-                .filter(ClipItem.Columns.createdAt < cutoffDate)
-                .filter(ClipItem.Columns.isPinned == false)
-                .fetchAll(db)
+        let removed = try deleteRemovable(Self.removable.filter(ClipItem.Columns.createdAt < cutoffDate))
+        guard !removed.isEmpty else { return }
+        Task { await deleteAssets(of: removed) }
+    }
 
-            let refs = itemsToDelete.compactMap { item -> (String, UUID)? in
-                guard let path = item.imagePath else { return nil }
-                return (path, item.id)
-            }
+    /// The history cleanup never removes pinned items or anything on a board: deleting the row
+    /// would take it off its boards too (`pinboard_items` cascades).
+    private static var removable: QueryInterfaceRequest<ClipItem> {
+        ClipItem
+            .filter(ClipItem.Columns.isPinned == false)
+            .filter(sql: "id NOT IN (SELECT clip_id FROM pinboard_items)")
+    }
 
-            try ClipItem
-                .filter(ClipItem.Columns.createdAt < cutoffDate)
-                .filter(ClipItem.Columns.isPinned == false)
-                .deleteAll(db)
-
-            return refs
-        }
-
-        if !imageRefs.isEmpty {
-            Task {
-                for (path, id) in imageRefs {
-                    await ImageStorage.shared.deleteAssets(imagePath: path, itemId: id)
-                }
-            }
+    private func deleteRemovable(_ request: QueryInterfaceRequest<ClipItem>) throws -> [ClipItem] {
+        try database.dbQueue.write { db in
+            let items = try request.fetchAll(db)
+            try request.deleteAll(db)
+            return items
         }
     }
 
-    func enforceHistoryLimit(_ limit: Int) throws {
-        let imageRefs = try database.dbQueue.write { db -> [(String, UUID)] in
-            let count = try ClipItem.fetchCount(db)
-            guard count > limit else { return [] }
-            let excess = count - limit
-            let oldItems = try ClipItem
-                .filter(ClipItem.Columns.isPinned == false)
-                .order(ClipItem.Columns.createdAt.asc)
-                .limit(excess)
-                .fetchAll(db)
-
-            let refs = oldItems.compactMap { item -> (String, UUID)? in
-                guard let path = item.imagePath else { return nil }
-                return (path, item.id)
-            }
-
-            for item in oldItems {
-                try item.delete(db)
-            }
-
-            return refs
-        }
-
-        if !imageRefs.isEmpty {
-            Task {
-                for (path, id) in imageRefs {
-                    await ImageStorage.shared.deleteAssets(imagePath: path, itemId: id)
-                }
-            }
+    private func deleteAssets(of items: [ClipItem]) async {
+        for item in items where item.imagePath != nil {
+            await imageStorage.deleteAssets(imagePath: item.imagePath, itemId: item.id)
         }
     }
 

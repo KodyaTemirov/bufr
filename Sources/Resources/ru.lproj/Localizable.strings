@@ -16,7 +16,7 @@
 "general.retention.clear" = "Стереть историю...";
 "general.retention.confirm.title" = "Стереть историю?";
 "general.retention.confirm.action" = "Стереть";
-"general.retention.confirm.message" = "Вся история копирования будет удалена.";
+"general.retention.confirm.message" = "Вся история копирования будет удалена. Записи на досках останутся.";
 
 /* General Settings - Language */
 "general.language.header" = "Язык";
