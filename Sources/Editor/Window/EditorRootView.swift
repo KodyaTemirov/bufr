@@ -5,11 +5,15 @@ struct EditorActions {
     var save: () -> Void
     var pin: () -> Void
     var done: () -> Void
+    /// nil when the image has no file in the screenshots folder
+    var reveal: (() -> Void)?
+    /// The name shared files get (the screenshot's file name)
+    var shareFilename: String
 }
 
 struct EditorRootView: View {
     /// Small enough for any Mac screen, wide enough for both toolbar rows
-    static let minimumSize = CGSize(width: 1000, height: 520)
+    static let minimumSize = CGSize(width: 1080, height: 520)
     /// Height of the two toolbar rows with their dividers
     static let toolbarHeight: CGFloat = 94
 
@@ -59,6 +63,18 @@ struct EditorToolbar: View {
             Spacer(minLength: 16)
 
             EditorIconButton(titleKey: "card.copy", systemImage: "doc.on.doc", action: actions.copy)
+            ShareLink(
+                item: EditorShareItem(document: model.document, base: model.base, filename: actions.shareFilename),
+                preview: SharePreview(actions.shareFilename)
+            ) {
+                EditorIconLabel(systemImage: "square.and.arrow.up")
+            }
+            .buttonStyle(.plain)
+            .help(L10n("editor.share"))
+            .accessibilityLabel(L10n("editor.share"))
+            if let reveal = actions.reveal {
+                EditorIconButton(titleKey: "card.showInFinder", systemImage: "folder", action: reveal)
+            }
             EditorIconButton(titleKey: "card.pin", systemImage: "pin", action: actions.pin)
             EditorIconButton(titleKey: "common.save", systemImage: "square.and.arrow.down", action: actions.save)
                 .keyboardShortcut("s", modifiers: .command)
@@ -239,24 +255,33 @@ private struct EditorIconButton: View {
     let systemImage: String
     let action: () -> Void
 
+    var body: some View {
+        Button(action: action) {
+            EditorIconLabel(systemImage: systemImage)
+        }
+        .buttonStyle(.plain)
+        .help(L10n(titleKey))
+        .accessibilityLabel(L10n(titleKey))
+    }
+}
+
+/// The look of the secondary buttons (also the Share menu's label).
+private struct EditorIconLabel: View {
+    let systemImage: String
+
     @State private var isHovered = false
 
     var body: some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: 15, weight: .regular))
-                .foregroundStyle(.primary)
-                .frame(width: 34, height: 32)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(isHovered ? Color.primary.opacity(0.08) : .clear)
-                )
-                .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .onHover { isHovered = $0 }
-        .help(L10n(titleKey))
-        .accessibilityLabel(L10n(titleKey))
+        Image(systemName: systemImage)
+            .font(.system(size: 15, weight: .regular))
+            .foregroundStyle(.primary)
+            .frame(width: 34, height: 32)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isHovered ? Color.primary.opacity(0.08) : .clear)
+            )
+            .contentShape(.rect)
+            .onHover { isHovered = $0 }
     }
 }
 

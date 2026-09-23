@@ -151,12 +151,28 @@ struct EditorWindowSmokeTests {
         try await Task.sleep(for: .milliseconds(100))
 
         let minimum = editor.controller.window.contentMinSize.width
-        let tools = NSHostingView(rootView: EditorToolbar(model: editor.canvas.model, actions: EditorActions(copy: {}, save: {}, pin: {}, done: {})))
+        let tools = NSHostingView(rootView: EditorToolbar(model: editor.canvas.model, actions: EditorActions(copy: {}, save: {}, pin: {}, done: {}, reveal: {}, shareFilename: "Shot.png")))
         let options = NSHostingView(rootView: EditorToolOptionsBar(model: editor.canvas.model))
         #expect(tools.fittingSize.width <= minimum, "tools \(tools.fittingSize.width) pt")
         #expect(options.fittingSize.width <= minimum, "options \(options.fittingSize.width) pt")
         #expect(tools.fittingSize.height >= 44, "tools row \(tools.fittingSize.height) pt high")
         editor.controller.window.close()
+    }
+
+    /// "Show in Finder" is offered only when the image has a file in the screenshots folder.
+    @Test func showInFinderOnlyForImagesWithAFolderCopy() async throws {
+        let editor = try await makeEditor()
+        #expect(!editor.controller.canRevealInFinder)
+        editor.controller.window.close()
+
+        let saved = try TestSupport.makeTempDirectory().appendingPathComponent("Shot.png")
+        try Data([0]).write(to: saved)
+        try editor.clipStore.setSavedFilePath(saved.path, for: editor.item.id)
+        let item = try #require(try editor.clipStore.item(id: editor.item.id))
+        let session = try await editor.annotationStore.open(item)
+        let controller = EditorWindowController(item: item, session: session, store: editor.annotationStore, pins: ScreenPinManager())
+        #expect(controller.canRevealInFinder)
+        controller.window.close()
     }
 
     /// Quitting Bufr with unsaved edits stops and asks in that editor instead of losing them.

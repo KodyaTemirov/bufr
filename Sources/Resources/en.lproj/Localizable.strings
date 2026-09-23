@@ -360,3 +360,4 @@
 "editor.changedElsewhere.title" = "The image was changed outside the editor";
 "editor.changedElsewhere.message" = "It was reverted or its layers were removed while this editor was open. Close the editor and open the image again.";
 "editor.size" = "Size";
+"editor.share" = "Share…";

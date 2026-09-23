@@ -37,7 +37,9 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
             copy: { [weak self] in self?.copyResult() },
             save: { [weak self] in Task { await self?.save() } },
             pin: { [weak self] in self?.pinResult() },
-            done: { [weak self] in self?.finish() }
+            done: { [weak self] in self?.finish() },
+            reveal: item.savedFilePath == nil ? nil : { [weak self] in self?.revealInFinder() },
+            shareFilename: ImageExporter.suggestedFilename(for: item)
         )
         window.contentViewController = NSHostingController(rootView: EditorRootView(model: model, actions: actions))
         window.title = L10n("editor.title", item.displayTitle)
@@ -129,6 +131,23 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         }
         PasteboardWriter.writeImage(png: png)
         ToastPresenter.show(L10n("toast.copied"))
+    }
+
+    /// The screenshots-folder copy; saved first, so the file has the edits.
+    var canRevealInFinder: Bool { item.savedFilePath != nil }
+
+    private func revealInFinder() {
+        commitPendingEdits()
+        Task {
+            if model.isDirty {
+                guard await save() != nil else { return }
+            }
+            guard let path = item.savedFilePath, FileManager.default.fileExists(atPath: path) else {
+                NSSound.beep()
+                return
+            }
+            NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
+        }
     }
 
     private func pinResult() {
