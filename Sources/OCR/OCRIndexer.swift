@@ -149,9 +149,13 @@ actor OCRIndexer {
             }
 
             var text = ""
-            if let imagePath = source.imagePath, let url = imageStorage.fileURL(for: imagePath), let image = Self.loadImage(url) {
+            if let imagePath = source.imagePath, let url = imageStorage.fileURL(for: imagePath) {
                 do {
-                    text = try await recognize(image)
+                    var strips: [String] = []
+                    for image in Self.loadImages(url) {
+                        strips.append(try await recognize(image))
+                    }
+                    text = OCRTiling.join(strips)
                 } catch {
                     logger.error("OCR failed for \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
                     failed.insert(id)
@@ -196,13 +200,37 @@ actor OCRIndexer {
         return info.isLowPowerModeEnabled || info.thermalState == .serious || info.thermalState == .critical
     }
 
-    private static func loadImage(_ url: URL) -> CGImage? {
-        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-        ]
-        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+    /// The image to recognize, or its strips when it is a long capture (see `OCRTiling`).
+    private static func loadImages(_ url: URL) -> [CGImage] {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return [] }
+        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+        let width = properties?[kCGImagePropertyPixelWidth] as? Int ?? 0
+        let height = properties?[kCGImagePropertyPixelHeight] as? Int ?? 0
+        let tiles = OCRTiling.tiles(width: width, height: height, maxSide: maxPixelSize)
+
+        guard tiles.count > 1, let full = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
+            let options: [CFString: Any] = [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+            ]
+            return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary).map { [$0] } ?? []
+        }
+        return tiles.compactMap { rect in
+            guard let strip = full.cropping(to: rect) else { return nil }
+            return width > maxPixelSize ? scaled(strip, by: Double(maxPixelSize) / Double(width)) : strip
+        }
+    }
+
+    private static func scaled(_ image: CGImage, by factor: Double) -> CGImage? {
+        let width = max(1, Int(Double(image.width) * factor))
+        let height = max(1, Int(Double(image.height) * factor))
+        guard let context = CGContext(
+            data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return nil }
+        context.interpolationQuality = .high
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return context.makeImage()
     }
 }
