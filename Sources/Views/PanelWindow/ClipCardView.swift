@@ -67,16 +67,7 @@ struct ClipCardView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
 
-            // Footer
-            if let footer = footerText {
-                Text(footer)
-                    .font(.system(.caption2, design: .rounded))
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            footerRow
         }
         .frame(height: 200)
         .background(
@@ -84,27 +75,20 @@ struct ClipCardView: View {
                 .fill(cardBackgroundColor)
         )
         .clipShape(RoundedRectangle(cornerRadius: cardRadius, style: .continuous))
+        // Hover: a hint of the ring and a soft lift; selection: a clear ring in the accent
+        // (or board) colour
         .overlay(
             RoundedRectangle(cornerRadius: cardRadius, style: .continuous)
-                .stroke(
-                    (isSelected || isHovered)
-                        ? (effectiveBoardColor?.opacity(0.7) ?? Color.accentColor.opacity(0.7))
-                        : Color(nsColor: .separatorColor),
-                    lineWidth: (isSelected || isHovered) ? 2 : 1
+                .strokeBorder(
+                    isSelected ? ringColor : (isHovered ? ringColor.opacity(0.4) : Color(nsColor: .separatorColor)),
+                    lineWidth: isSelected ? 2.5 : 1
                 )
         )
-        .overlay(alignment: .bottomTrailing) {
-            if let index = shortcutIndex {
-                Text("⌘\(index)")
-                    .font(.system(.caption2, design: .rounded, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Color(nsColor: .controlBackgroundColor), in: .capsule)
-                    .overlay(Capsule().stroke(Color(nsColor: .separatorColor), lineWidth: 0.5))
-                    .padding(8)
-            }
-        }
+        .shadow(
+            color: isSelected ? ringColor.opacity(0.3) : .black.opacity(isHovered ? 0.14 : 0),
+            radius: isSelected ? 10 : 8,
+            y: 3
+        )
         .animation(.easeInOut(duration: 0.2), value: isHovered)
         .animation(.spring(duration: 0.25, bounce: 0.2), value: isSelected)
         .onHover { isHovered = $0 }
@@ -197,6 +181,10 @@ struct ClipCardView: View {
         boardColor ?? itemBoardColor
     }
 
+    private var ringColor: Color {
+        effectiveBoardColor ?? .accentColor
+    }
+
     private var cardBackgroundColor: Color {
         Color(nsColor: .controlBackgroundColor)
     }
@@ -254,24 +242,52 @@ struct ClipCardView: View {
         case .text, .richText:
             TextCardContent(text: item.textContent ?? "")
                 .padding(.horizontal, 12)
-                .padding(.top, 8)
-                .padding(.bottom, 4)
+                .padding(.top, 10)
         case .image:
             ImageCardContent(imagePath: item.imagePath, itemId: item.id)
                 .id(item.hash) // reload the thumbnail after an edit
+                .padding(.horizontal, 8)
+                .padding(.top, 8)
         case .url:
             URLCardContent(text: item.textContent ?? "")
                 .padding(.horizontal, 12)
-                .padding(.bottom, 4)
+                .padding(.top, 10)
         case .file:
             FileCardContent(paths: item.filePathsArray)
                 .padding(.horizontal, 12)
-                .padding(.bottom, 4)
+                .padding(.top, 8)
         case .color:
             ColorCardContent(text: item.textContent ?? "")
-                .padding(.horizontal, 12)
-                .padding(.bottom, 4)
+                .padding(.horizontal, 8)
+                .padding(.top, 8)
         }
+    }
+
+    /// One line: what the card holds on the left, its ⌘-number on the right.
+    private var footerRow: some View {
+        HStack(spacing: 5) {
+            if let footer = footerText {
+                Text(footer)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            if item.contentType == .image, item.ocrText?.isEmpty == false {
+                Image(systemName: "text.viewfinder")
+                    .tooltip(L10n("card.hasText"))
+            }
+            Spacer(minLength: 4)
+            if let index = shortcutIndex {
+                Text("⌘\(index)")
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.primary.opacity(0.07), in: .capsule)
+            }
+        }
+        .font(.system(size: 11, design: .rounded))
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 12)
+        .frame(height: 28)
     }
 
     // MARK: - Footer
@@ -284,7 +300,7 @@ struct ClipCardView: View {
         case .image:
             return item.pixelSizeText
         case .url:
-            return item.textContent
+            return nil // the site and path are in the body
         case .file:
             let paths = item.filePathsArray
             if paths.count == 1, let path = paths.first {
@@ -295,9 +311,9 @@ struct ClipCardView: View {
                 }
                 return L10n("card.file.one")
             }
-            return L10n("card.files", paths.count)
+            return nil // the body says how many
         case .color:
-            return item.textContent
+            return nil // HEX and RGB are on the sample
         }
     }
 

@@ -372,3 +372,4 @@
 "scrolling.autoNeedsAccessibility" = "Для «Авто» нужен Универсальный доступ — открыть настройки";
 "toast.scrollingFailed" = "Скроллинг-захват остановлен";
 "scrolling.hint.pointerLeft" = "«Авто» на паузе: указатель ушёл из области";
+"card.hasText" = "Текст распознан — ищется в поиске";

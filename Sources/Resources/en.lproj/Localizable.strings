@@ -372,3 +372,4 @@
 "scrolling.autoNeedsAccessibility" = "“Auto” needs Accessibility — open settings";
 "toast.scrollingFailed" = "Scrolling capture stopped";
 "scrolling.hint.pointerLeft" = "“Auto” paused: the pointer left the area";
+"card.hasText" = "Text recognized — searchable";

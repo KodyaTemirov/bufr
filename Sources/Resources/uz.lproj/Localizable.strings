@@ -372,3 +372,4 @@
 "scrolling.autoNeedsAccessibility" = "«Avto» uchun Universal kirish kerak — sozlamalarni ochish";
 "toast.scrollingFailed" = "Aylantirib suratga olish to'xtadi";
 "scrolling.hint.pointerLeft" = "«Avto» to'xtatildi: ko'rsatkich hududdan chiqdi";
+"card.hasText" = "Matn aniqlandi — qidiruvda topiladi";
