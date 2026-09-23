@@ -11,18 +11,20 @@ struct QuickAccessStackView: View {
             if controller.overflowCount > 0 {
                 Text("+\(controller.overflowCount)")
                     .font(.system(.caption, design: .rounded, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, 12)
                     .frame(height: QuickAccessPresenter.overflowHeight)
-                    .background(.black.opacity(0.7), in: .capsule)
+                    .glassEffect(.regular, in: .capsule)
             }
             ForEach(controller.visibleEntries.reversed()) { entry in
                 QuickAccessCardView(entry: entry, controller: controller, actions: actions)
-                    .transition(.move(edge: .leading).combined(with: .opacity))
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.85, anchor: .bottom).combined(with: .opacity),
+                        removal: .move(edge: .leading).combined(with: .opacity)
+                    ))
             }
         }
         .padding(QuickAccessPresenter.inset)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-        .animation(.spring(duration: 0.3), value: controller.visibleEntries.map(\.id))
+        .animation(.spring(duration: 0.35, bounce: 0.25), value: controller.visibleEntries.map(\.id))
     }
 }

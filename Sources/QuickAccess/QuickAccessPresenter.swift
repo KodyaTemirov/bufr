@@ -18,8 +18,8 @@ final class QuickAccessPresenter {
     static let spacing: CGFloat = 10
     static let overflowHeight: CGFloat = 26
     static let margin: CGFloat = 16
-    /// Room for the cards' shadow
-    static let inset: CGFloat = 10
+    /// Room for the cards' soft shadow
+    static let inset: CGFloat = 24
 
     private let controller: QuickAccessController
     private let settings: ScreenshotSettings

@@ -1,32 +1,32 @@
 import SwiftUI
 
 struct QuickAccessCardView: View {
+    /// macOS 26–27 geometry: continuous corners, the image concentric inside the glass
+    static let cornerRadius: CGFloat = 20
+    static let imageInset: CGFloat = 6
+
     let entry: QuickAccessEntry
     let controller: QuickAccessController
     let actions: QuickAccessActions
 
     @State private var isHovered = false
 
+    private var imageShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: Self.cornerRadius - Self.imageInset, style: .continuous)
+    }
+
     var body: some View {
         ZStack {
-            Color.black.opacity(0.85)
-
-            if let thumbnail = entry.thumbnail {
-                Image(nsImage: thumbnail)
-                    .resizable()
-                    .scaledToFit()
-                    .padding(4)
-            }
-
+            imageLayer
             if isHovered {
                 hoverControls
                     .transition(.opacity)
             }
         }
+        .padding(Self.imageInset)
         .frame(width: QuickAccessPresenter.cardSize.width, height: QuickAccessPresenter.cardSize.height)
-        .clipShape(.rect(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white.opacity(0.18), lineWidth: 1))
-        .shadow(color: .black.opacity(0.35), radius: 6, y: 2)
+        .glassEffect(.regular, in: .rect(cornerRadius: Self.cornerRadius, style: .continuous))
+        .shadow(color: .black.opacity(0.25), radius: 16, y: 6)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) { isHovered = hovering }
             controller.setHovered(entry.id, hovering)
@@ -37,6 +37,7 @@ struct QuickAccessCardView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 160)
+                    .clipShape(imageShape)
             }
         }
         .contextMenu {
@@ -54,9 +55,23 @@ struct QuickAccessCardView: View {
         }
     }
 
+    /// The screenshot, whole, on a dark letterbox where its shape differs from the card's.
+    private var imageLayer: some View {
+        ZStack {
+            imageShape.fill(.black.opacity(0.35))
+            if let thumbnail = entry.thumbnail {
+                Image(nsImage: thumbnail)
+                    .resizable()
+                    .scaledToFit()
+            }
+        }
+        .clipShape(imageShape)
+        .overlay(imageShape.strokeBorder(.white.opacity(0.14), lineWidth: 0.5))
+    }
+
     private var hoverControls: some View {
         ZStack {
-            Color.black.opacity(0.45)
+            imageShape.fill(.black.opacity(0.35))
 
             VStack(spacing: 6) {
                 pillButton(L10n("card.copy"), action: copy)
@@ -79,31 +94,31 @@ struct QuickAccessCardView: View {
                     cornerButton("text.viewfinder", help: L10n("card.copyText")) { actions.copyText(entry.item) }
                 }
             }
-            .padding(6)
+            .padding(5)
         }
     }
 
     private func pillButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(.callout, design: .rounded, weight: .semibold))
-                .foregroundStyle(.black)
-                .frame(width: 120, height: 26)
-                .background(.white, in: .capsule)
+                .font(.system(size: 12, weight: .semibold))
+                .frame(width: 104)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.glass)
+        .controlSize(.small)
     }
 
     private func cornerButton(_ systemImage: String, help: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 24, height: 24)
-                .background(.black.opacity(0.6), in: .circle)
+                .font(.system(size: 10, weight: .bold))
+                .frame(width: 14, height: 14)
         }
-        .buttonStyle(.plain)
-        .help(help)
+        .buttonStyle(.glass)
+        .buttonBorderShape(.circle)
+        .controlSize(.small)
+        .tooltip(help)
+        .accessibilityLabel(help)
     }
 
     private func copy() {
