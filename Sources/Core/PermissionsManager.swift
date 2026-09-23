@@ -2,6 +2,7 @@ import AppKit
 import ApplicationServices
 import CoreGraphics
 import OSLog
+import Security
 
 private let logger = Logger(subsystem: "com.bufr.app", category: "PermissionsManager")
 
@@ -10,8 +11,8 @@ enum ScreenCapturePermission: Equatable, Sendable {
     /// The system prompt has never been shown
     case notRequested
     case denied
-    /// Granted for an earlier build: an ad-hoc signed update has a new code identity,
-    /// and macOS keeps showing the old switch as ON while denying access
+    /// Granted to an earlier binary: an ad-hoc signed update or rebuild has a new code
+    /// identity, and macOS keeps showing the old switch as ON while denying access
     case lostAfterUpdate
 }
 
@@ -23,32 +24,46 @@ final class PermissionsManager {
 
     private enum Keys {
         static let requested = "screenCaptureRequested"
-        static let grantedBuild = "screenCaptureGrantedBuild"
+        /// The binary (code directory hash) the grant was last seen working for
+        static let grantedIdentity = "screenCaptureGrantedIdentity"
+        /// Before identities: the CFBundleVersion — misses rebuilds that keep the version
+        static let legacyGrantedBuild = "screenCaptureGrantedBuild"
     }
 
     @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let codeIdentity: String
+    @ObservationIgnored private let preflight: () -> Bool
 
-    init(defaults: UserDefaults = .standard) {
+    init(
+        defaults: UserDefaults = .standard,
+        codeIdentity: String? = CodeIdentity.current,
+        preflight: @escaping () -> Bool = { CGPreflightScreenCaptureAccess() }
+    ) {
         self.defaults = defaults
+        self.codeIdentity = codeIdentity ?? "unknown"
+        self.preflight = preflight
         refresh()
     }
 
-    nonisolated static func status(granted: Bool, requestedBefore: Bool, grantedBuild: String?, currentBuild: String) -> ScreenCapturePermission {
+    nonisolated static func status(granted: Bool, requestedBefore: Bool, grantedIdentity: String?, currentIdentity: String) -> ScreenCapturePermission {
         if granted { return .granted }
-        if let grantedBuild, grantedBuild != currentBuild { return .lostAfterUpdate }
+        if let grantedIdentity, grantedIdentity != currentIdentity { return .lostAfterUpdate }
         return requestedBefore ? .denied : .notRequested
     }
 
     func refresh() {
-        let granted = CGPreflightScreenCaptureAccess()
+        let granted = preflight()
         if granted {
-            defaults.set(currentBuild, forKey: Keys.grantedBuild)
+            defaults.set(codeIdentity, forKey: Keys.grantedIdentity)
+            defaults.removeObject(forKey: Keys.legacyGrantedBuild)
         }
+        // A grant recorded by build number belonged to an earlier binary of some kind
+        let legacyGrant = defaults.string(forKey: Keys.legacyGrantedBuild).map { "build-\($0)" }
         screenCapture = Self.status(
             granted: granted,
             requestedBefore: defaults.bool(forKey: Keys.requested),
-            grantedBuild: defaults.string(forKey: Keys.grantedBuild),
-            currentBuild: currentBuild
+            grantedIdentity: defaults.string(forKey: Keys.grantedIdentity) ?? legacyGrant,
+            currentIdentity: codeIdentity
         )
         accessibilityGranted = AXIsProcessTrusted()
     }
@@ -84,7 +99,8 @@ final class PermissionsManager {
             logger.error("tccutil reset failed: \(error.localizedDescription, privacy: .public)")
         }
         defaults.set(false, forKey: Keys.requested)
-        defaults.removeObject(forKey: Keys.grantedBuild)
+        defaults.removeObject(forKey: Keys.grantedIdentity)
+        defaults.removeObject(forKey: Keys.legacyGrantedBuild)
         refresh()
     }
 
@@ -118,8 +134,20 @@ final class PermissionsManager {
             }
         }
     }
+}
 
-    private var currentBuild: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
-    }
+/// Which binary is running. Ad-hoc signed grants (Screen Recording, Accessibility) are tied to
+/// this hash, so every build — even with the same version number — starts without them.
+enum CodeIdentity {
+    static let current: String? = {
+        var code: SecCode?
+        var staticCode: SecStaticCode?
+        var info: CFDictionary?
+        guard SecCodeCopySelf([], &code) == errSecSuccess, let code,
+              SecCodeCopyStaticCode(code, [], &staticCode) == errSecSuccess, let staticCode,
+              SecCodeCopySigningInformation(staticCode, SecCSFlags(rawValue: kSecCSSigningInformation), &info) == errSecSuccess,
+              let hash = (info as? [String: Any])?[kSecCodeInfoUnique as String] as? Data
+        else { return nil }
+        return hash.map { String(format: "%02x", $0) }.joined()
+    }()
 }

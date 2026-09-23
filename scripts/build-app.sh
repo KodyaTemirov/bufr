@@ -55,9 +55,18 @@ if [ -d "$RESOURCE_BUNDLE" ]; then
     cp -R "$RESOURCE_BUNDLE" "$APP_BUNDLE/Contents/Resources/"
 fi
 
-# Ad-hoc code sign (no developer certificate needed)
-echo "Signing $APP_NAME.app (ad-hoc)..."
-codesign --force --deep --sign - "$APP_BUNDLE"
+# Signing. Release builds are ad-hoc (no developer certificate needed). macOS ties
+# Screen Recording and Accessibility grants of an ad-hoc app to that exact binary, so
+# every rebuild would lose them; debug builds therefore use an "Apple Development"
+# certificate when the keychain has one (grants then survive rebuilds).
+# BUFR_SIGN_IDENTITY overrides both ("-" = ad-hoc).
+SIGN_IDENTITY="-"
+if [ "$CONFIG" = "debug" ] && security find-identity -v -p codesigning 2>/dev/null | grep -q '"Apple Development'; then
+    SIGN_IDENTITY="Apple Development"
+fi
+SIGN_IDENTITY="${BUFR_SIGN_IDENTITY:-$SIGN_IDENTITY}"
+echo "Signing $APP_NAME.app ($([ "$SIGN_IDENTITY" = "-" ] && echo ad-hoc || echo "$SIGN_IDENTITY"))..."
+codesign --force --deep --sign "$SIGN_IDENTITY" "$APP_BUNDLE"
 
 # Remove quarantine attribute
 xattr -cr "$APP_BUNDLE" 2>/dev/null || true

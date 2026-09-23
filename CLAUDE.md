@@ -33,6 +33,7 @@ open Bufr-Debug.app
 
 - Test capture features with the `.app`, not `.build/debug/Bufr`: macOS attributes Screen Recording permission to the process that launches a bare binary (e.g. Terminal).
 - Debug builds never touch the installed app's data (separate folder and bundle id) — `eraseDatabaseOnSchemaChange` is on in DEBUG.
+- Signing: release builds are ad-hoc. Debug builds are signed with an "Apple Development" certificate when the keychain has one, so Screen Recording / Accessibility grants survive rebuilds (ad-hoc grants are tied to the binary's hash and are lost on every build). `BUFR_SIGN_IDENTITY` overrides (`-` = ad-hoc).
 
 ## Architecture
 
