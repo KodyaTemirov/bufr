@@ -88,7 +88,11 @@ final class ScreenshotCoordinator {
                     previousArea: previousAreaStore.load(),
                     keptWindowIDs: keptWindowIDs()
                 )
-                guard let outcome = try await session.capture(mode, options: options) else { return }
+                guard let result = try await session.capture(mode, options: options) else { return }
+                guard case let .image(outcome) = result else {
+                    NSSound.beep() // scrolling capture: connected in the next step
+                    return
+                }
                 if mode == .text {
                     await processTextCapture(outcome)
                     return

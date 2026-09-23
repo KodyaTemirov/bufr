@@ -110,6 +110,7 @@ struct MenuBarView: View {
         (.capturePreviousArea, .previousArea),
         (.captureAllInOne, .allInOne),
         (.captureText, .text),
+        (.captureScrolling, .scrolling),
     ]
 
     /// A shortcut macOS still owns would be misleading next to the item

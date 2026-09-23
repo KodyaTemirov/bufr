@@ -30,7 +30,7 @@ final class CaptureSessionController {
     private let toolbarModel = AllInOneToolbarModel()
 
     /// Returns nil when the user cancels.
-    func capture(_ mode: CaptureMode, options: Options) async throws -> CaptureOutcome? {
+    func capture(_ mode: CaptureMode, options: Options) async throws -> CaptureSessionResult? {
         guard !isActive else { return nil }
         isActive = true
         defer { isActive = false }
@@ -44,11 +44,11 @@ final class CaptureSessionController {
                 throw ScreenCaptureService.CaptureError.displayNotFound
             }
             let capture = try await service.captureDisplay(displayID, content: content, showsCursor: options.showsCursor, keptWindowIDs: options.keptWindowIDs)
-            return CaptureOutcome(
+            return .image(CaptureOutcome(
                 image: capture.image, pointScale: capture.pointScale,
                 sourceAppId: frontmost?.bundleIdentifier, sourceAppName: frontmost?.localizedName,
                 region: nil, screenRect: DisplayInfo.screen(for: displayID)?.frame
-            )
+            ))
 
         case .previousArea:
             if let region = options.previousArea,
@@ -57,12 +57,12 @@ final class CaptureSessionController {
                 let capture = try await service.captureDisplay(displayID, content: content, showsCursor: false, keptWindowIDs: options.keptWindowIDs)
                 guard let image = ScreenCaptureService.crop(capture.image, localRect: region.localRect, displayPointSize: screen.frame.size)
                 else { return nil }
-                return CaptureOutcome(
+                return .image(CaptureOutcome(
                     image: image, pointScale: capture.pointScale,
                     sourceAppId: frontmost?.bundleIdentifier, sourceAppName: frontmost?.localizedName,
                     region: region,
                     screenRect: ScreenGeometry.cocoaRect(fromLocal: region.localRect, screenFrame: screen.frame)
-                )
+                ))
             }
             // No previous area yet, or its display is gone: let the user pick one
             return try await interactiveCapture(windowMode: false, adjustable: false, content: content, options: options, frontmost: frontmost)
@@ -72,6 +72,9 @@ final class CaptureSessionController {
 
         case .allInOne:
             return try await interactiveCapture(windowMode: false, adjustable: true, content: content, options: options, frontmost: frontmost)
+
+        case .scrolling:
+            return try await interactiveCapture(windowMode: false, adjustable: false, scrolling: true, content: content, options: options, frontmost: frontmost)
         }
     }
 
@@ -85,10 +88,11 @@ final class CaptureSessionController {
     private func interactiveCapture(
         windowMode: Bool,
         adjustable: Bool,
+        scrolling: Bool = false,
         content: SCShareableContent,
         options: Options,
         frontmost: NSRunningApplication?
-    ) async throws -> CaptureOutcome? {
+    ) async throws -> CaptureSessionResult? {
         // Freeze every display before any overlay exists: the overlay shows exactly this image.
         // A display ScreenCaptureKit can't read (some virtual/DisplayLink ones) is skipped, not fatal.
         var frames: [CGDirectDisplayID: ScreenCaptureService.Capture] = [:]
@@ -113,6 +117,13 @@ final class CaptureSessionController {
             adjustable: adjustable, showMagnifier: options.showMagnifier
         ) else { return nil }
 
+        if case let .scroll(displayID, localRect) = selection {
+            return scrollRegion(displayID: displayID, localRect: localRect, frames: frames, app: frontmost)
+        }
+        if scrolling {
+            return scrollRegion(for: selection, frames: frames, frontmost: frontmost)
+        }
+
         switch selection {
         case let .area(displayID, localRect):
             guard let frame = frames[displayID],
@@ -120,31 +131,75 @@ final class CaptureSessionController {
                   let image = ScreenCaptureService.crop(frame.image, localRect: localRect, displayPointSize: screen.frame.size)
             else { return nil }
             let region = DisplayInfo.uuidString(for: displayID).map { CaptureRegion(displayUUID: $0, localRect: localRect) }
-            return CaptureOutcome(
+            return .image(CaptureOutcome(
                 image: image, pointScale: frame.pointScale,
                 sourceAppId: frontmost?.bundleIdentifier, sourceAppName: frontmost?.localizedName,
                 region: region,
                 screenRect: ScreenGeometry.cocoaRect(fromLocal: localRect, screenFrame: screen.frame)
-            )
+            ))
 
         case let .display(displayID):
             guard let frame = frames[displayID] else { return nil }
-            return CaptureOutcome(
+            return .image(CaptureOutcome(
                 image: frame.image, pointScale: frame.pointScale,
                 sourceAppId: frontmost?.bundleIdentifier, sourceAppName: frontmost?.localizedName,
                 region: nil, screenRect: DisplayInfo.screen(for: displayID)?.frame
-            )
+            ))
 
         case let .window(window):
             let capture = try await service.captureWindow(window.windowID, content: content, shadow: options.windowShadow)
             let owner = NSRunningApplication(processIdentifier: window.ownerPID)
-            return CaptureOutcome(
+            return .image(CaptureOutcome(
                 image: capture.image, pointScale: capture.pointScale,
                 sourceAppId: owner?.bundleIdentifier, sourceAppName: owner?.localizedName ?? window.ownerName,
                 region: nil,
                 screenRect: ScreenGeometry.cocoaRect(fromCG: window.frame, primaryHeight: DisplayInfo.primaryHeight)
-            )
+            ))
+
+        case .scroll:
+            return nil // handled above
         }
+    }
+
+    // MARK: - Scrolling capture
+
+    /// Any selection made in scrolling mode, as the region to record.
+    private func scrollRegion(
+        for selection: CaptureSelection,
+        frames: [CGDirectDisplayID: ScreenCaptureService.Capture],
+        frontmost: NSRunningApplication?
+    ) -> CaptureSessionResult? {
+        switch selection {
+        case let .area(displayID, localRect), let .scroll(displayID, localRect):
+            return scrollRegion(displayID: displayID, localRect: localRect, frames: frames, app: frontmost)
+        case let .display(displayID):
+            guard let screen = DisplayInfo.screen(for: displayID) else { return nil }
+            return scrollRegion(displayID: displayID, localRect: CGRect(origin: .zero, size: screen.frame.size), frames: frames, app: frontmost)
+        case let .window(window):
+            let center = ScreenGeometry.cocoaRect(fromCG: window.frame, primaryHeight: DisplayInfo.primaryHeight)
+            guard let screen = NSScreen.screens.first(where: { $0.frame.contains(CGPoint(x: center.midX, y: center.midY)) }) ?? NSScreen.screens.first,
+                  let displayID = screen.displayID,
+                  let localRect = ScrollRegion.localRect(ofWindow: window.frame, screenFrame: screen.frame, primaryHeight: DisplayInfo.primaryHeight)
+            else { return nil }
+            return scrollRegion(displayID: displayID, localRect: localRect, frames: frames, app: NSRunningApplication(processIdentifier: window.ownerPID))
+        }
+    }
+
+    private func scrollRegion(
+        displayID: CGDirectDisplayID,
+        localRect: CGRect,
+        frames: [CGDirectDisplayID: ScreenCaptureService.Capture],
+        app: NSRunningApplication?
+    ) -> CaptureSessionResult? {
+        guard let screen = DisplayInfo.screen(for: displayID) else { return nil }
+        return .scrollRegion(ScrollRegion(
+            displayID: displayID,
+            localRect: localRect.integral,
+            screenFrame: screen.frame,
+            pointScale: frames[displayID]?.pointScale ?? screen.backingScaleFactor,
+            sourceAppId: app?.bundleIdentifier,
+            sourceAppName: app?.localizedName
+        ))
     }
 
     private func present(
@@ -252,6 +307,7 @@ final class CaptureSessionController {
             onArea: { [weak self] in self?.setWindowMode(false) },
             onWindow: { [weak self] in self?.setWindowMode(true) },
             onFullscreen: { [weak self] in self?.captureFullscreenFromToolbar() },
+            onScrolling: { [weak self] in self?.scrollFromToolbar() },
             onCancel: { [weak self] in self?.cancel() },
             onCapture: { [weak self] in self?.captureAdjustedSelection() }
         )
@@ -273,6 +329,17 @@ final class CaptureSessionController {
             return
         }
         finish(.area(displayID: view.displayID, localRect: localRect))
+    }
+
+    /// "Scrolling" in the mode bar: record the current selection while it scrolls.
+    private func scrollFromToolbar() {
+        guard let view = overlayViews.first(where: { $0.adjustedLocalSelection != nil }),
+              let localRect = view.adjustedLocalSelection
+        else {
+            NSSound.beep()
+            return
+        }
+        finish(.scroll(displayID: view.displayID, localRect: localRect))
     }
 
     /// "Screen" in the mode bar: the whole display under the pointer, from the frozen frame.

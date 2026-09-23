@@ -457,6 +457,8 @@ final class AppState {
             screenshots.capture(.allInOne)
         case .captureText:
             screenshots.capture(.text)
+        case .captureScrolling:
+            screenshots.capture(.scrolling)
         }
     }
 

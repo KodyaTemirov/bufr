@@ -12,6 +12,7 @@ struct AllInOneToolbar: View {
     let onArea: () -> Void
     let onWindow: () -> Void
     let onFullscreen: () -> Void
+    let onScrolling: () -> Void
     let onCancel: () -> Void
     let onCapture: () -> Void
 
@@ -20,6 +21,7 @@ struct AllInOneToolbar: View {
             modeButton("rectangle.dashed", L10n("allInOne.area"), selected: !model.windowMode, action: onArea)
             modeButton("macwindow", L10n("allInOne.window"), selected: model.windowMode, action: onWindow)
             modeButton("display", L10n("allInOne.fullscreen"), selected: false, action: onFullscreen)
+            modeButton("scroll", L10n("allInOne.scrolling"), selected: false, action: onScrolling)
 
             Divider()
                 .frame(height: 24)

@@ -361,3 +361,5 @@
 "editor.changedElsewhere.message" = "Muharrir ochiq turganda rasm aslicha qaytarildi yoki qatlamlari o'chirildi. Muharrirni yoping va rasmni qayta oching.";
 "editor.size" = "O'lcham";
 "editor.share" = "Ulashish…";
+"hotkeys.action.captureScrolling" = "Aylantirib suratga olish";
+"allInOne.scrolling" = "Aylantirish";

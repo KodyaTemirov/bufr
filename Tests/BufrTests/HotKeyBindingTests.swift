@@ -20,6 +20,15 @@ struct HotKeyBindingTests {
         store = HotKeyBindingStore(defaults: defaults)
     }
 
+    /// ⌥⇧⌘4 — "area, but long"; free in macOS and different from every other default.
+    @Test func scrollingShortcutDefaultsToOptionShiftCommandFour() {
+        let scrolling = HotKeyAction.captureScrolling.defaultBinding
+        let others = HotKeyAction.allCases.filter { $0 != .captureScrolling }.compactMap(\.defaultBinding)
+
+        #expect(scrolling == HotKeyBinding(key: .four, modifiers: [.command, .shift, .option]))
+        #expect(!others.contains(HotKeyBinding(key: .four, modifiers: [.command, .shift, .option])))
+    }
+
     @Test func defaultIsUsedWhenNothingStored() {
         #expect(store.binding(for: .togglePanel) == HotKeyAction.togglePanel.defaultBinding)
         #expect(store.binding(for: .togglePanel)?.displayString == "⇧⌘V")

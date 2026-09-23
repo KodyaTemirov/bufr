@@ -10,6 +10,7 @@ enum HotKeyAction: String, CaseIterable, Codable, Sendable {
     case capturePreviousArea
     case captureAllInOne
     case captureText
+    case captureScrolling
 
     enum Group: CaseIterable {
         case panel
@@ -19,7 +20,7 @@ enum HotKeyAction: String, CaseIterable, Codable, Sendable {
     var group: Group {
         switch self {
         case .togglePanel: .panel
-        case .captureArea, .captureWindow, .captureFullscreen, .capturePreviousArea, .captureAllInOne, .captureText: .screenshots
+        case .captureArea, .captureWindow, .captureFullscreen, .capturePreviousArea, .captureAllInOne, .captureText, .captureScrolling: .screenshots
         }
     }
 
@@ -30,6 +31,7 @@ enum HotKeyAction: String, CaseIterable, Codable, Sendable {
         case .captureFullscreen: HotKeyBinding(key: .three, modifiers: [.command, .shift])
         case .captureAllInOne: HotKeyBinding(key: .five, modifiers: [.command, .shift])
         case .captureText: HotKeyBinding(key: .two, modifiers: [.command, .shift])
+        case .captureScrolling: HotKeyBinding(key: .four, modifiers: [.command, .shift, .option])
         case .captureWindow, .capturePreviousArea: nil
         }
     }

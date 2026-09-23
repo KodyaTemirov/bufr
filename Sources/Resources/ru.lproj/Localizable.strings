@@ -361,3 +361,5 @@
 "editor.changedElsewhere.message" = "Пока редактор был открыт, картинку вернули к оригиналу или удалили её слои. Закройте редактор и откройте картинку снова.";
 "editor.size" = "Размер";
 "editor.share" = "Поделиться…";
+"hotkeys.action.captureScrolling" = "Скроллинг-захват";
+"allInOne.scrolling" = "Прокрутка";
