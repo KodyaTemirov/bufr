@@ -74,9 +74,9 @@ struct QuickAccessCardView: View {
             imageShape.fill(.black.opacity(0.35))
 
             VStack(spacing: 6) {
-                pillButton(L10n("card.copy"), action: copy)
-                pillButton(L10n("card.annotate"), action: annotate)
-                pillButton(L10n("card.saveAs"), action: saveAs)
+                pillButton(L10n("card.copy"), systemImage: "doc.on.doc", action: copy)
+                pillButton(L10n("card.annotate"), systemImage: "pencil", action: annotate)
+                pillButton(L10n("card.saveAs"), systemImage: "square.and.arrow.down", action: saveAs)
             }
 
             VStack {
@@ -98,11 +98,14 @@ struct QuickAccessCardView: View {
         }
     }
 
-    private func pillButton(_ title: String, action: @escaping () -> Void) -> some View {
+    private func pillButton(_ title: String, systemImage: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title)
+            Label(title, systemImage: systemImage)
+                .labelStyle(.titleAndIcon)
                 .font(.system(size: 12, weight: .semibold))
-                .frame(width: 104)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(width: 128)
         }
         .buttonStyle(.glass)
         .controlSize(.small)

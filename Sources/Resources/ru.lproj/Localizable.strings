@@ -277,7 +277,7 @@
 "card.showInFinder" = "Показать в Finder";
 "menubar.capture.openFolder" = "Открыть папку скриншотов";
 "menubar.capture.permission" = "⚠︎ Нужно разрешение на запись экрана…";
-"card.annotate" = "Аннотировать";
+"card.annotate" = "Редактировать";
 "card.saveAs" = "Сохранить как…";
 "screenPin.opacity" = "Прозрачность";
 "screenPin.lock" = "Заблокировать (клики сквозь)";

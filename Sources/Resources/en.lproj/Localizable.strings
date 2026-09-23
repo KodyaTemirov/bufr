@@ -277,7 +277,7 @@
 "card.showInFinder" = "Show in Finder";
 "menubar.capture.openFolder" = "Open Screenshots Folder";
 "menubar.capture.permission" = "⚠︎ Screen Recording Permission Needed…";
-"card.annotate" = "Annotate";
+"card.annotate" = "Edit";
 "card.saveAs" = "Save As…";
 "screenPin.opacity" = "Opacity";
 "screenPin.lock" = "Lock (clicks pass through)";
