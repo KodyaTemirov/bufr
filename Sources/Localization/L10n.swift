@@ -24,6 +24,11 @@ private func localizationBundle() -> Bundle {
 
 private let _localizationBundle: Bundle = localizationBundle()
 
+/// Bufr's resource bundle (strings, the menu bar icon).
+func resourceBundle() -> Bundle {
+    _localizationBundle
+}
+
 /// Localization helper. Loads strings from the correct .lproj bundle
 /// based on the current app language setting.
 func L10n(_ key: String) -> String {

@@ -5,9 +5,12 @@ struct BufrApp: App {
     @NSApplicationDelegateAdaptor(BufrAppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        MenuBarExtra("Bufr", systemImage: "clipboard") {
+        MenuBarExtra {
             MenuBarView()
                 .environment(AppState.shared)
+        } label: {
+            Image(nsImage: MenuBarIcon.image)
+                .accessibilityLabel("Bufr")
         }
     }
 }
