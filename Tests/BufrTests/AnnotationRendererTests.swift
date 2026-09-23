@@ -105,4 +105,57 @@ struct AnnotationRendererTests {
 
         #expect(ImageEncoder.pngData(from: first, pointScale: 1, downscaleToOneX: false) == ImageEncoder.pngData(from: second, pointScale: 1, downscaleToOneX: false))
     }
+
+    /// The canvas draws annotations on a transparent layer over the base image; export draws
+    /// them onto the base. A highlighter must look the same both ways (dark UI included).
+    @Test func highlighterLooksTheSameOnCanvasAndInExport() throws {
+        let dark = base(width: 100, height: 60, topColor: CGColor(srgbRed: 0.12, green: 0.12, blue: 0.12, alpha: 1))
+        var document = AnnotationDocument(baseImageFilename: "b", pixelWidth: 100, pixelHeight: 60, pointScale: 1)
+        document.add(Annotation(shape: .highlighter(CGRect(x: 0, y: 0, width: 100, height: 60)), style: AnnotationStyle(color: .yellow, lineWidth: 4, fontSize: 20)))
+
+        let exported = try #require(AnnotationRenderer.renderFlattened(document, base: dark))
+
+        // Canvas: the overlay drawn alone, composited normally over the base
+        let context = CGContext(
+            data: nil, width: 100, height: 60, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        )!
+        context.draw(dark, in: CGRect(x: 0, y: 0, width: 100, height: 60))
+        let overlay = CGContext(
+            data: nil, width: 100, height: 60, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        )!
+        overlay.translateBy(x: 0, y: 60)
+        overlay.scaleBy(x: 1, y: -1)
+        AnnotationRenderer.draw(document, base: dark, in: overlay, includeBase: false)
+        context.draw(overlay.makeImage()!, in: CGRect(x: 0, y: 0, width: 100, height: 60))
+        let canvas = context.makeImage()!
+
+        for (x, y) in [(50, 10), (50, 50)] {
+            let a = pixel(exported, x, y), b = pixel(canvas, x, y)
+            #expect(zip(a, b).allSatisfy { abs(Int($0) - Int($1)) <= 3 }, "export \(a) vs canvas \(b) at \(x),\(y)")
+        }
+        #expect(pixel(exported, 50, 10)[0] > 90) // visibly yellow on the dark half
+    }
+
+    /// Crop edges between pixels must not resample the whole image.
+    @Test func fractionalCropKeepsPixelsSharp() throws {
+        let context = CGContext(
+            data: nil, width: 40, height: 10, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        )!
+        for x in 0..<40 {
+            let value: CGFloat = x.isMultiple(of: 2) ? 0 : 1
+            context.setFillColor(CGColor(srgbRed: value, green: value, blue: value, alpha: 1))
+            context.fill(CGRect(x: x, y: 0, width: 1, height: 10))
+        }
+        let stripes = context.makeImage()!
+        var document = AnnotationDocument(baseImageFilename: "s", pixelWidth: 40, pixelHeight: 10, pointScale: 1)
+        document.crop = CGRect(x: 10.5, y: 0.25, width: 20.3, height: 9.5)
+
+        let output = try #require(AnnotationRenderer.renderFlattened(document, base: stripes))
+
+        let row = (0..<output.width).map { pixel(output, $0, output.height / 2)[0] }
+        #expect(row.allSatisfy { $0 < 3 || $0 > 252 }, "\(row)")
+    }
 }

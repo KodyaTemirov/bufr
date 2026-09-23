@@ -135,4 +135,52 @@ struct EditorViewModelTests {
 
         #expect(model.document.annotations.first?.shape == .text(origin: CGPoint(x: 40, y: 40), string: "Bug here"))
     }
+
+    @Test func cropSnapsToWholePixels() {
+        model.tool = .crop
+        drag(from: CGPoint(x: 10.4, y: 5.6), to: CGPoint(x: 80.7, y: 60.2))
+
+        let crop = model.document.crop
+        #expect(crop == crop?.integral)
+    }
+
+    /// Picking a colour for a selected shape keeps its thickness (and a text's size).
+    @Test func changingColorKeepsTheSelectionsWeight() {
+        model.tool = .rectangle
+        model.weight = .thick
+        drag(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 60, y: 50))
+        model.selection = []
+        model.weight = .thin // toolbar now thin, the rectangle still thick
+        model.tool = .select
+        model.selection = Set(model.document.annotations.map(\.id))
+
+        model.color = .blue
+
+        let style = model.document.annotations.first?.style
+        #expect(style?.color == .blue)
+        #expect(style?.lineWidth == EditorViewModel.Weight.thick.lineWidthPoints * 2)
+    }
+
+    /// Saving runs in the background; an edit made meanwhile is still unsaved afterwards.
+    @Test func editDuringASaveStaysUnsaved() {
+        model.tool = .rectangle
+        drag(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 60, y: 50))
+        let beingSaved = model.document
+        drag(from: CGPoint(x: 100, y: 100), to: CGPoint(x: 150, y: 150))
+
+        model.markSaved(beingSaved)
+
+        #expect(model.isDirty)
+    }
+
+    @Test func undoingBackToTheSavedStateIsClean() {
+        model.tool = .rectangle
+        drag(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 60, y: 50))
+        model.markSaved(model.document)
+        drag(from: CGPoint(x: 100, y: 100), to: CGPoint(x: 150, y: 150))
+
+        model.undo()
+
+        #expect(!model.isDirty)
+    }
 }

@@ -8,6 +8,9 @@ struct EditorActions {
 }
 
 struct EditorRootView: View {
+    /// Small enough for any Mac screen, wide enough for the whole toolbar
+    static let minimumSize = CGSize(width: 840, height: 480)
+
     @Bindable var model: EditorViewModel
     let actions: EditorActions
 
@@ -23,16 +26,18 @@ struct EditorRootView: View {
                 }
             }
         }
-        .frame(minWidth: 640, minHeight: 420)
+        .frame(minWidth: Self.minimumSize.width, minHeight: Self.minimumSize.height)
     }
 }
 
-private struct EditorToolbar: View {
+struct EditorToolbar: View {
     @Bindable var model: EditorViewModel
     let actions: EditorActions
 
+    @State private var showsStyle = false
+
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             HStack(spacing: 2) {
                 ForEach(AnnotationTool.allCases, id: \.self) { tool in
                     Button {
@@ -44,49 +49,42 @@ private struct EditorToolbar: View {
                     }
                     .buttonStyle(.plain)
                     .help("\(L10n(tool.titleKey)) (\(String(tool.shortcut).uppercased()))")
+                    .accessibilityLabel(L10n(tool.titleKey))
                 }
             }
 
             Divider().frame(height: 22)
 
-            HStack(spacing: 5) {
-                ForEach(Array(RGBAColor.palette.enumerated()), id: \.offset) { index, color in
-                    Button {
-                        model.color = color
-                    } label: {
-                        Circle()
-                            .fill(Color(cgColor: color.cgColor))
-                            .frame(width: 16, height: 16)
-                            .overlay(Circle().stroke(Color.primary.opacity(model.color == color ? 0.9 : 0.25), lineWidth: model.color == color ? 2 : 1))
-                    }
-                    .buttonStyle(.plain)
-                    .help("\(index + 1)")
-                }
+            Button {
+                showsStyle.toggle()
+            } label: {
+                Circle()
+                    .fill(Color(cgColor: model.color.cgColor))
+                    .frame(width: 18, height: 18)
+                    .overlay(Circle().stroke(Color.primary.opacity(0.3), lineWidth: 1))
+                    .frame(width: 26, height: 24)
             }
-
-            Picker("", selection: $model.weight) {
-                Image(systemName: "line.diagonal").tag(EditorViewModel.Weight.thin)
-                Image(systemName: "line.diagonal").fontWeight(.semibold).tag(EditorViewModel.Weight.medium)
-                Image(systemName: "line.diagonal").fontWeight(.black).tag(EditorViewModel.Weight.thick)
+            .buttonStyle(.plain)
+            .help(L10n("editor.style"))
+            .accessibilityLabel(L10n("editor.style"))
+            .popover(isPresented: $showsStyle, arrowEdge: .bottom) {
+                EditorStylePicker(model: model)
+                    .padding(12)
             }
-            .pickerStyle(.segmented)
-            .frame(width: 110)
-            .help(L10n("editor.weight"))
 
             Spacer(minLength: 8)
 
             if model.document.crop != nil {
-                Button(L10n("editor.resetCrop")) { model.resetCrop() }
+                iconButton("editor.resetCrop", systemImage: "crop.rotate") { model.resetCrop() }
             }
+            iconButton("editor.undo", systemImage: "arrow.uturn.backward") { model.undo() }
+            iconButton("editor.redo", systemImage: "arrow.uturn.forward") { model.redo() }
 
-            Button { model.undo() } label: { Image(systemName: "arrow.uturn.backward") }
-                .help(L10n("editor.undo"))
-            Button { model.redo() } label: { Image(systemName: "arrow.uturn.forward") }
-                .help(L10n("editor.redo"))
+            Divider().frame(height: 22)
 
-            Button(L10n("card.copy"), action: actions.copy)
-            Button(L10n("card.pin"), action: actions.pin)
-            Button(L10n("common.save"), action: actions.save)
+            iconButton("card.copy", systemImage: "doc.on.doc", action: actions.copy)
+            iconButton("card.pin", systemImage: "pin", action: actions.pin)
+            iconButton("common.save", systemImage: "square.and.arrow.down", action: actions.save)
                 .keyboardShortcut("s", modifiers: .command)
             Button(L10n("common.done"), action: actions.done)
                 .keyboardShortcut(.return, modifiers: .command)
@@ -95,5 +93,48 @@ private struct EditorToolbar: View {
         .controlSize(.regular)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+    }
+
+    private func iconButton(_ titleKey: String, systemImage: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .frame(width: 26, height: 24)
+        }
+        .buttonStyle(.borderless)
+        .help(L10n(titleKey))
+        .accessibilityLabel(L10n(titleKey))
+    }
+}
+
+/// Colour and thickness, in a popover to keep the toolbar narrow (1–8 and [ ] work too).
+private struct EditorStylePicker: View {
+    @Bindable var model: EditorViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                ForEach(Array(RGBAColor.palette.enumerated()), id: \.offset) { index, color in
+                    Button {
+                        model.color = color
+                    } label: {
+                        Circle()
+                            .fill(Color(cgColor: color.cgColor))
+                            .frame(width: 20, height: 20)
+                            .overlay(Circle().stroke(Color.primary.opacity(model.color == color ? 0.9 : 0.25), lineWidth: model.color == color ? 2 : 1))
+                    }
+                    .buttonStyle(.plain)
+                    .help("\(index + 1)")
+                }
+            }
+
+            Picker(L10n("editor.weight"), selection: $model.weight) {
+                Image(systemName: "line.diagonal").tag(EditorViewModel.Weight.thin)
+                Image(systemName: "line.diagonal").fontWeight(.semibold).tag(EditorViewModel.Weight.medium)
+                Image(systemName: "line.diagonal").fontWeight(.black).tag(EditorViewModel.Weight.thick)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .help(L10n("editor.weight"))
+        }
     }
 }

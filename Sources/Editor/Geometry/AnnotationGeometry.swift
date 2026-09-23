@@ -102,8 +102,10 @@ enum AnnotationGeometry {
         case let .filledRectangle(rect), let .highlighter(rect), let .pixelate(rect), let .blur(rect):
             return rect.insetBy(dx: -tolerance, dy: -tolerance).contains(point)
         case let .spotlight(rect):
-            // The bright hole is what the user sees; its edge selects it
-            return rect.insetBy(dx: -reach, dy: -reach).contains(point)
+            // Its edge selects it, so shapes inside the bright hole stay clickable
+            let hole = rect.standardized
+            return hole.insetBy(dx: -reach, dy: -reach).contains(point)
+                && !hole.insetBy(dx: reach, dy: reach).contains(point)
         case .text:
             return bounds(of: annotation).insetBy(dx: -tolerance, dy: -tolerance).contains(point)
         case let .pencil(points):
@@ -238,8 +240,20 @@ enum AnnotationGeometry {
 }
 
 extension AnnotationDocument {
-    /// The annotation drawn on top at `point`.
+    /// The annotation the user sees on top at `point`: `AnnotationRenderer` draws effects,
+    /// then spotlights, then vector shapes, whatever order they were added in.
     func topmost(at point: CGPoint, tolerance: CGFloat) -> Annotation? {
-        annotations.last { AnnotationGeometry.hitTest($0, at: point, tolerance: tolerance) }
+        annotations.enumerated()
+            .filter { AnnotationGeometry.hitTest($0.element, at: point, tolerance: tolerance) }
+            .max { (Self.renderPass($0.element.shape), $0.offset) < (Self.renderPass($1.element.shape), $1.offset) }?
+            .element
+    }
+
+    private static func renderPass(_ shape: AnnotationShape) -> Int {
+        switch shape {
+        case .pixelate, .blur: 0
+        case .spotlight: 1
+        default: 2
+        }
     }
 }

@@ -100,6 +100,21 @@ struct QuickAccessAutoCloseTests {
         try await Task.sleep(for: .milliseconds(400))
         #expect(controller.entries.isEmpty)
     }
+
+    /// Copy, Annotate, Pin or × close the hovered card; the pointer never "leaves" it, so the
+    /// rest of the stack must start closing on its own again.
+    @Test func closingTheHoveredCardResumesTheOthers() async throws {
+        let controller = QuickAccessController(autoCloseDelay: { .milliseconds(100) })
+        let older = entry(), newer = entry()
+        controller.add(older)
+        controller.add(newer)
+        controller.setHovered(newer.id, true)
+
+        controller.dismiss(newer.id)
+        try await Task.sleep(for: .milliseconds(400))
+
+        #expect(controller.entries.isEmpty)
+    }
 }
 
 struct QuickAccessThumbnailTests {

@@ -53,7 +53,7 @@ enum AnnotationRenderer {
     /// Flattened result: the crop (or the whole image) with everything drawn in.
     static func renderFlattened(_ document: AnnotationDocument, base: CGImage) -> CGImage? {
         let size = document.outputSize
-        let crop = document.crop?.standardized ?? CGRect(origin: .zero, size: size)
+        let crop = document.pixelCrop ?? CGRect(origin: .zero, size: size)
         let colorSpace = base.colorSpace.flatMap { $0.model == .rgb ? $0 : nil } ?? CGColorSpace(name: CGColorSpace.sRGB)!
         guard let context = CGContext(
             data: nil, width: max(1, Int(size.width)), height: max(1, Int(size.height)),
@@ -111,7 +111,8 @@ enum AnnotationRenderer {
             drawText(string, at: origin, style: style, in: context)
 
         case let .highlighter(rect):
-            context.setBlendMode(.multiply)
+            // Plain alpha, not multiply: the canvas draws on a transparent layer above the
+            // image, where multiply has nothing to multiply with (and on dark UI it vanishes)
             context.setFillColor(style.color.cgColor.copy(alpha: 0.4) ?? color)
             context.fill(rect.standardized)
 

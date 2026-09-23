@@ -41,16 +41,29 @@ final class EditorViewModel {
         }
     }
     var color: RGBAColor = .red {
-        didSet { restyleSelection() }
+        didSet {
+            let color = color
+            restyleSelection { $0.color = color }
+        }
     }
     var weight: Weight = .medium {
-        didSet { restyleSelection() }
+        didSet {
+            let lineWidth = weight.lineWidthPoints * document.pointScale
+            let fontSize = weight.fontSizePoints * document.pointScale
+            restyleSelection {
+                $0.lineWidth = lineWidth
+                $0.fontSize = fontSize
+            }
+        }
     }
     var selection: Set<UUID> = []
     /// The annotation being drawn; shown on top until the pointer is released
     private(set) var draft: Annotation?
     private(set) var editingTextID: UUID?
-    private(set) var isDirty = false
+    /// The document as last saved; anything else (including an edit made while a save was
+    /// running) is unsaved
+    private var savedDocument: AnnotationDocument
+    var isDirty: Bool { document != savedDocument }
     /// Hit radius in pixels; the canvas updates it with the zoom level
     var hitTolerance: CGFloat = 8
 
@@ -59,6 +72,7 @@ final class EditorViewModel {
 
     init(document: AnnotationDocument, base: CGImage) {
         self.document = document
+        self.savedDocument = document
         self.base = base
         undoManager.groupsByEvent = false
     }
@@ -81,8 +95,9 @@ final class EditorViewModel {
     var canUndo: Bool { undoManager.canUndo }
     var canRedo: Bool { undoManager.canRedo }
 
-    func markSaved() {
-        isDirty = false
+    /// `document` is what was written, which may be older than the current one.
+    func markSaved(_ document: AnnotationDocument) {
+        savedDocument = document
     }
 
     // MARK: - Pointer
@@ -153,7 +168,8 @@ final class EditorViewModel {
             draft = nil
             guard isMeaningful(finished.shape) else { return }
             if case let .spotlight(rect) = finished.shape, tool == .crop {
-                change { $0.crop = rect.standardized }
+                let bounds = CGRect(x: 0, y: 0, width: document.pixelWidth, height: document.pixelHeight)
+                change { $0.crop = rect.standardized.integral.intersection(bounds) }
                 tool = .select
                 return
             }
@@ -163,7 +179,6 @@ final class EditorViewModel {
         case let .move(_, snapshot), let .resize(_, _, snapshot):
             if snapshot != document {
                 registerUndo(restoring: snapshot)
-                isDirty = true
             }
 
         case nil:
@@ -200,7 +215,6 @@ final class EditorViewModel {
         } else {
             change { $0.annotations[index].shape = .text(origin: origin, string: string) }
         }
-        isDirty = true
     }
 
     // MARK: - Commands
@@ -261,7 +275,6 @@ final class EditorViewModel {
         body(&document)
         guard before != document else { return }
         registerUndo(restoring: before)
-        isDirty = true
     }
 
     private func registerUndo(restoring previous: AnnotationDocument) {
@@ -279,7 +292,6 @@ final class EditorViewModel {
         document = previous
         let ids = Set(previous.annotations.map(\.id))
         selection = selection.intersection(ids)
-        isDirty = true
         // Registering while undoing makes this the redo step
         undoManager.registerUndo(withTarget: self) { target in
             MainActor.assumeIsolated {
@@ -368,13 +380,13 @@ final class EditorViewModel {
         }
     }
 
-    private func restyleSelection() {
+    /// Changes only the attribute the user picked: a colour keeps each shape's thickness.
+    private func restyleSelection(_ update: (inout AnnotationStyle) -> Void) {
         guard !selection.isEmpty else { return }
         let ids = selection
-        let style = currentStyle
         change { document in
             for index in document.annotations.indices where ids.contains(document.annotations[index].id) {
-                document.annotations[index].style = style
+                update(&document.annotations[index].style)
             }
         }
     }

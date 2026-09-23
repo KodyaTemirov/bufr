@@ -11,10 +11,14 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
     let window: NSWindow
     var onClose: (UUID) -> Void = { _ in }
 
+    var hasUnsavedChanges: Bool { model.isDirty }
+
     private let model: EditorViewModel
     private let store: AnnotationStore
     private let pins: ScreenPinManager
     private var allowsClose = false
+    /// Saves run one after another: two overlapping saves could interleave their file writes
+    private var lastSave: Task<ClipItem?, Never>?
 
     init(item: ClipItem, session: AnnotationStore.Session, store: AnnotationStore, pins: ScreenPinManager) {
         self.item = item
@@ -40,7 +44,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         window.isReleasedWhenClosed = false
         window.delegate = self
         window.setContentSize(Self.initialContentSize(for: session.document))
-        window.contentMinSize = CGSize(width: 640, height: 420)
+        window.contentMinSize = EditorRootView.minimumSize
         window.center()
     }
 
@@ -50,9 +54,10 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         let toolbar: CGFloat = 52
         let image = CGSize(width: Double(document.pixelWidth) / document.pointScale + 48,
                            height: Double(document.pixelHeight) / document.pointScale + 48 + toolbar)
+        let minimum = EditorRootView.minimumSize
         return CGSize(
-            width: max(640, min(image.width, visible.width * 0.8)),
-            height: max(420, min(image.height, visible.height * 0.8))
+            width: max(minimum.width, min(image.width, visible.width * 0.8)),
+            height: max(minimum.height, min(image.height, visible.height * 0.8))
         )
     }
 
@@ -60,11 +65,26 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
 
     @discardableResult
     func save() async -> ClipItem? {
+        commitPendingEdits()
+        let previous = lastSave
+        let task = Task { () -> ClipItem? in
+            _ = await previous?.value
+            return await self.performSave()
+        }
+        lastSave = task
+        return await task.value
+    }
+
+    private func performSave() async -> ClipItem? {
         guard model.isDirty || item.annotationPath == nil && !model.document.annotations.isEmpty else { return item }
+        let document = model.document
         do {
-            item = try await store.commit(model.document, base: model.base, for: item)
-            model.markSaved()
+            item = try await store.commit(document, base: model.base, for: item)
+            model.markSaved(document)
             return item
+        } catch AnnotationStore.StoreError.changedElsewhere {
+            showChangedElsewhereAlert()
+            return nil
         } catch {
             logger.error("Saving annotations failed: \(error.localizedDescription, privacy: .public)")
             NSSound.beep()
@@ -72,7 +92,24 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         }
     }
 
+    /// A text box being typed in is part of the document only once typing ends; every action
+    /// that saves, copies or closes ends it first (Done's ⌘↩ reaches the button before the
+    /// text view).
+    private func commitPendingEdits() {
+        if let textEditor = window.firstResponder as? TextAnnotationEditor {
+            textEditor.onFinish()
+        }
+    }
+
+    private func showChangedElsewhereAlert() {
+        let alert = NSAlert()
+        alert.messageText = L10n("editor.changedElsewhere.title")
+        alert.informativeText = L10n("editor.changedElsewhere.message")
+        alert.beginSheetModal(for: window)
+    }
+
     private func finish() {
+        commitPendingEdits()
         Task {
             if model.isDirty {
                 guard await save() != nil else { return }
@@ -83,6 +120,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
     }
 
     private func copyResult() {
+        commitPendingEdits()
         guard let flattened = AnnotationRenderer.renderFlattened(model.document, base: model.base),
               let png = ImageEncoder.pngData(from: flattened, pointScale: CGFloat(model.document.pointScale), downscaleToOneX: false)
         else {
@@ -107,6 +145,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
+        commitPendingEdits()
         guard model.isDirty, !allowsClose else { return true }
 
         let alert = NSAlert()
@@ -143,15 +182,26 @@ final class EditorWindowManager {
     private var controllers: [UUID: EditorWindowController] = [:]
     private let store: AnnotationStore
     private let pins: ScreenPinManager
+    private let present: @MainActor (NSWindow) -> Void
 
-    init(store: AnnotationStore, pins: ScreenPinManager) {
+    init(store: AnnotationStore, pins: ScreenPinManager, present: @escaping @MainActor (NSWindow) -> Void = { AppActivation.present($0) }) {
         self.store = store
         self.pins = pins
+        self.present = present
+    }
+
+    /// Before quitting: false (quit cancelled) when an editor has unsaved changes; that editor
+    /// comes forward and asks "Save changes?" instead.
+    func reviewUnsavedChangesBeforeQuit() -> Bool {
+        guard let unsaved = controllers.values.first(where: \.hasUnsavedChanges) else { return true }
+        present(unsaved.window)
+        unsaved.window.performClose(nil)
+        return false
     }
 
     func open(_ item: ClipItem) {
         if let existing = controllers[item.id] {
-            AppActivation.present(existing.window)
+            present(existing.window)
             return
         }
         Task { [weak self] in
@@ -163,7 +213,7 @@ final class EditorWindowManager {
                     self?.controllers[id] = nil
                 }
                 controllers[item.id] = controller
-                AppActivation.present(controller.window)
+                present(controller.window)
             } catch {
                 logger.error("Opening the editor failed: \(error.localizedDescription, privacy: .public)")
                 NSSound.beep()

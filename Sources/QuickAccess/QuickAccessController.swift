@@ -46,8 +46,12 @@ final class QuickAccessController {
     func dismiss(_ id: UUID) {
         timers[id]?.cancel()
         timers[id] = nil
-        hovered.remove(id)
+        let wasHovered = hovered.remove(id) != nil
         entries.removeAll { $0.id == id }
+        // A card closed from its own buttons never reports the pointer leaving it
+        if wasHovered, hovered.isEmpty {
+            entries.forEach { scheduleAutoClose($0.id) }
+        }
         onChange()
     }
 

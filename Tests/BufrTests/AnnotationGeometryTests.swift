@@ -86,4 +86,26 @@ struct AnnotationGeometryTests {
         let diagonal = AnnotationGeometry.snappedEnd(from: .zero, to: CGPoint(x: 100, y: 90))
         #expect(abs(diagonal.x - diagonal.y) < 0.001)
     }
+
+    /// Clicks pick what the user sees on top: arrows and shapes are drawn over effects and
+    /// spotlights whatever order they were added in.
+    @Test func vectorShapesWinOverLaterEffects() {
+        let arrow = annotation(.arrow(start: CGPoint(x: 10, y: 30), end: CGPoint(x: 110, y: 30)))
+        let pixelate = annotation(.pixelate(CGRect(x: 0, y: 0, width: 200, height: 100)))
+        let document = AnnotationDocument(baseImageFilename: "b", pixelWidth: 200, pixelHeight: 100, pointScale: 1, annotations: [arrow, pixelate])
+
+        #expect(document.topmost(at: CGPoint(x: 60, y: 31), tolerance: 3)?.id == arrow.id)
+        #expect(document.topmost(at: CGPoint(x: 60, y: 80), tolerance: 3)?.id == pixelate.id)
+    }
+
+    /// A spotlight is selected by its edge; shapes inside it stay clickable.
+    @Test func spotlightInteriorDoesNotCaptureClicks() {
+        let rect = annotation(.rectangle(CGRect(x: 50, y: 30, width: 60, height: 40)))
+        let spotlight = annotation(.spotlight(CGRect(x: 20, y: 10, width: 160, height: 80)))
+        let document = AnnotationDocument(baseImageFilename: "b", pixelWidth: 200, pixelHeight: 100, pointScale: 1, annotations: [rect, spotlight])
+
+        #expect(document.topmost(at: CGPoint(x: 50, y: 50), tolerance: 3)?.id == rect.id)
+        #expect(document.topmost(at: CGPoint(x: 150, y: 50), tolerance: 3) == nil)
+        #expect(document.topmost(at: CGPoint(x: 20, y: 50), tolerance: 3)?.id == spotlight.id)
+    }
 }

@@ -376,6 +376,11 @@ final class AppState {
 
     // MARK: - Editor
 
+    /// Quitting waits for unsaved editor changes to be saved or discarded.
+    func shouldTerminate() -> Bool {
+        editors.reviewUnsavedChangesBeforeQuit()
+    }
+
     func annotate(_ item: ClipItem) {
         guard item.contentType == .image else { return }
         hidePanel()

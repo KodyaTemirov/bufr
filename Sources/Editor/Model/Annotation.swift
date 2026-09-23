@@ -69,7 +69,15 @@ struct AnnotationDocument: Codable, Hashable, Sendable {
     var annotations: [Annotation] = []
 
     var outputSize: CGSize {
-        crop?.size ?? CGSize(width: pixelWidth, height: pixelHeight)
+        pixelCrop?.size ?? CGSize(width: pixelWidth, height: pixelHeight)
+    }
+
+    /// The crop on whole pixels inside the image: a crop edge between pixels would resample
+    /// (blur) the whole result.
+    var pixelCrop: CGRect? {
+        guard let crop else { return nil }
+        let clipped = crop.standardized.integral.intersection(CGRect(x: 0, y: 0, width: pixelWidth, height: pixelHeight))
+        return clipped.isNull || clipped.isEmpty ? nil : clipped
     }
 
     var nextCounterNumber: Int {

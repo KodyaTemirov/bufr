@@ -164,7 +164,7 @@ final class AnnotationCanvasView: NSView, NSTextViewDelegate {
 
     override func keyDown(with event: NSEvent) {
         let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
-        let characters = event.charactersIgnoringModifiers?.lowercased() ?? ""
+        let characters = Self.shortcutCharacters(for: event)
         let step: CGFloat = modifiers.contains(.shift) ? 10 : 1
 
         switch Int(event.keyCode) {
@@ -221,6 +221,27 @@ final class AnnotationCanvasView: NSView, NSTextViewDelegate {
         super.keyDown(with: event)
     }
 
+    /// What the key means for shortcuts: the typed letter on Latin layouts (Dvorak, AZERTY),
+    /// the letter at that key's US position on others (the key under V types "м" in Russian).
+    private static func shortcutCharacters(for event: NSEvent) -> String {
+        let typed = event.charactersIgnoringModifiers?.lowercased() ?? ""
+        if !typed.isEmpty, typed.allSatisfy(\.isASCII) {
+            return typed
+        }
+        return usPositions[Int(event.keyCode)].map(String.init) ?? typed
+    }
+
+    private static let usPositions: [Int: Character] = [
+        kVK_ANSI_A: "a", kVK_ANSI_B: "b", kVK_ANSI_C: "c", kVK_ANSI_D: "d", kVK_ANSI_E: "e",
+        kVK_ANSI_F: "f", kVK_ANSI_G: "g", kVK_ANSI_H: "h", kVK_ANSI_I: "i", kVK_ANSI_J: "j",
+        kVK_ANSI_K: "k", kVK_ANSI_L: "l", kVK_ANSI_M: "m", kVK_ANSI_N: "n", kVK_ANSI_O: "o",
+        kVK_ANSI_P: "p", kVK_ANSI_Q: "q", kVK_ANSI_R: "r", kVK_ANSI_S: "s", kVK_ANSI_T: "t",
+        kVK_ANSI_U: "u", kVK_ANSI_V: "v", kVK_ANSI_W: "w", kVK_ANSI_X: "x", kVK_ANSI_Y: "y",
+        kVK_ANSI_Z: "z", kVK_ANSI_1: "1", kVK_ANSI_2: "2", kVK_ANSI_3: "3", kVK_ANSI_4: "4",
+        kVK_ANSI_5: "5", kVK_ANSI_6: "6", kVK_ANSI_7: "7", kVK_ANSI_8: "8",
+        kVK_ANSI_LeftBracket: "[", kVK_ANSI_RightBracket: "]",
+    ]
+
     // MARK: - Text editing
 
     private func beginTextEditing() {
@@ -264,6 +285,11 @@ final class AnnotationCanvasView: NSView, NSTextViewDelegate {
 /// Inline text box for text annotations: Esc or ⌘↩ finishes, like clicking elsewhere.
 final class TextAnnotationEditor: NSTextView {
     var onFinish: () -> Void = {}
+
+    /// Typing gets its own undo stack. The editor's manager takes explicit groups only, and
+    /// typing registers undo outside a group — an exception on every keystroke.
+    private let typingUndoManager = UndoManager()
+    override var undoManager: UndoManager? { typingUndoManager }
 
     override init(frame frameRect: NSRect, textContainer container: NSTextContainer?) {
         super.init(frame: frameRect, textContainer: container)

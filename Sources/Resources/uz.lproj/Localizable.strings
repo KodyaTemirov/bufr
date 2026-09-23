@@ -357,3 +357,6 @@
 "setup.later" = "Keyinroq";
 "toast.accessibilityNeeded" = "Nusxalandi. Ilovalarga qo'yish uchun Bufr sozlamalari → Ruxsatlar bo'limida Maxsus imkoniyatlarga ruxsat bering";
 "toast.recognizing" = "Matn aniqlanmoqda…";
+"editor.changedElsewhere.title" = "Rasm muharrirdan tashqarida o'zgartirildi";
+"editor.changedElsewhere.message" = "Muharrir ochiq turganda rasm aslicha qaytarildi yoki qatlamlari o'chirildi. Muharrirni yoping va rasmni qayta oching.";
+"editor.style" = "Rang va qalinlik";

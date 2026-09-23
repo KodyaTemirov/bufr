@@ -43,6 +43,12 @@ final class ClipItemStore {
 
     // MARK: - Insert (with deduplication)
 
+    func item(id: UUID) throws -> ClipItem? {
+        try database.dbQueue.read { db in
+            try ClipItem.fetchOne(db, key: id)
+        }
+    }
+
     func existingItem(hash: String) throws -> ClipItem? {
         try database.dbQueue.read { db in
             try ClipItem

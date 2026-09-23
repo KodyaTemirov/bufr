@@ -129,6 +129,22 @@ struct AnnotationStoreTests {
         #expect(!FileManager.default.fileExists(atPath: imagesDir.appendingPathComponent("\(id)_orig.png").path))
     }
 
+    /// "Remove Layers" or "Revert" from the card while the editor is still open: a later save
+    /// from that editor must not bake the flattened image in as the new original.
+    @Test func saveFromAnOutdatedEditorIsRefused() async throws {
+        let item = try await makeScreenshot()
+        let id = try fileId(item)
+        var session = try await annotations.open(item)
+        session.document.add(redSquare())
+        let editorItem = try await annotations.commit(session.document, base: session.base, for: item)
+        _ = try await annotations.flatten(editorItem)
+
+        await #expect(throws: AnnotationStore.StoreError.changedElsewhere) {
+            try await annotations.commit(session.document, base: session.base, for: editorItem)
+        }
+        #expect(!FileManager.default.fileExists(atPath: imagesDir.appendingPathComponent("\(id)_orig.png").path))
+    }
+
     @Test func deletingTheItemRemovesEditorFiles() async throws {
         let item = try await makeScreenshot()
         let id = try fileId(item)

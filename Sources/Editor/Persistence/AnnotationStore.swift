@@ -19,6 +19,8 @@ final class AnnotationStore {
         case notAnImage
         case unreadableImage
         case renderingFailed
+        /// Reverted or had its layers removed from the card while the editor was open
+        case changedElsewhere
     }
 
     /// After every save/revert (pins and Quick Access refresh, OCR runs again)
@@ -74,9 +76,14 @@ final class AnnotationStore {
 
     // MARK: - Save
 
+    /// `item` is the editor's copy; if the image changed since (revert or "Remove Layers" from
+    /// the card), saving would bake the other version in as the new original, so it is refused.
     @discardableResult
     func commit(_ document: AnnotationDocument, base: CGImage, for item: ClipItem) async throws -> ClipItem {
         let names = try names(for: item)
+        guard let current = try store.item(id: item.id),
+              current.hash == item.hash, current.annotationPath == item.annotationPath
+        else { throw StoreError.changedElsewhere }
 
         // The first edit keeps the untouched original next to the image
         if await imageStorage.loadImageData(filename: names.original) == nil {
@@ -85,16 +92,21 @@ final class AnnotationStore {
         }
         try await imageStorage.writeFile(try JSONEncoder().encode(document), named: names.layers)
 
-        guard let flattened = AnnotationRenderer.renderFlattened(document, base: base),
-              let png = ImageEncoder.pngData(from: flattened, pointScale: CGFloat(document.pointScale), downscaleToOneX: false)
-        else { throw StoreError.renderingFailed }
+        // Rendering and PNG encoding of a 5K image take up to a second: off the main thread
+        guard let rendered = await Task.detached(priority: .userInitiated, operation: { () -> (png: Data, width: Int, height: Int)? in
+            guard let flattened = AnnotationRenderer.renderFlattened(document, base: base),
+                  let png = ImageEncoder.pngData(from: flattened, pointScale: CGFloat(document.pointScale), downscaleToOneX: false)
+            else { return nil }
+            return (png, flattened.width, flattened.height)
+        }).value else { throw StoreError.renderingFailed }
+        let png = rendered.png
 
         try await imageStorage.replaceImage(png, filename: names.image, thumbnailId: names.id)
         overwriteSavedFile(of: item, with: png)
 
         let updated = try store.applyEdit(
             id: item.id, hash: HashGenerator.sha256(png), annotationPath: names.layers,
-            pixelWidth: flattened.width, pixelHeight: flattened.height
+            pixelWidth: rendered.width, pixelHeight: rendered.height
         )
         onEdited(updated)
         return updated
