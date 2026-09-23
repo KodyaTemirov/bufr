@@ -15,7 +15,8 @@ actor OCRIndexer {
 
     private let repository: OCRRepository
     private let imageStorage: ImageStorage
-    private let recognize: @Sendable (CGImage) async throws -> String
+    /// Lines with their boxes, so long images can be read in strips and put back together
+    private let recognize: @Sendable (CGImage) async throws -> [OCRTextAssembler.Line]
     private let pauseBetweenImages: Duration
 
     private var urgent: [UUID] = []
@@ -30,7 +31,7 @@ actor OCRIndexer {
     init(
         repository: OCRRepository,
         imageStorage: ImageStorage,
-        recognize: @escaping @Sendable (CGImage) async throws -> String = { try await OCRService().recognizeText(in: $0) },
+        recognize: @escaping @Sendable (CGImage) async throws -> [OCRTextAssembler.Line] = { try await OCRService().recognizeLines(in: $0) },
         pauseBetweenImages: Duration = .milliseconds(250)
     ) {
         self.repository = repository
@@ -151,11 +152,12 @@ actor OCRIndexer {
             var text = ""
             if let imagePath = source.imagePath, let url = imageStorage.fileURL(for: imagePath) {
                 do {
-                    var strips: [String] = []
-                    for image in Self.loadImages(url) {
-                        strips.append(try await recognize(image))
+                    let source = Self.loadStrips(url)
+                    var strips: [(rect: CGRect, lines: [OCRTextAssembler.Line])] = []
+                    for strip in source.strips {
+                        strips.append((strip.rect, try await recognize(strip.image)))
                     }
-                    text = OCRTiling.join(strips)
+                    text = OCRTiling.assemble(strips, imageHeight: source.height)
                 } catch {
                     logger.error("OCR failed for \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
                     failed.insert(id)
@@ -200,13 +202,14 @@ actor OCRIndexer {
         return info.isLowPowerModeEnabled || info.thermalState == .serious || info.thermalState == .critical
     }
 
-    /// The image to recognize, or its strips when it is a long capture (see `OCRTiling`).
-    private static func loadImages(_ url: URL) -> [CGImage] {
-        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return [] }
+    /// The image to recognize, or its strips when it is a long capture (see `OCRTiling`), with
+    /// each strip's place in the image (pixels, top-left origin).
+    private static func loadStrips(_ url: URL) -> (strips: [(rect: CGRect, image: CGImage)], height: Int) {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return ([], 0) }
         let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
         let width = properties?[kCGImagePropertyPixelWidth] as? Int ?? 0
         let height = properties?[kCGImagePropertyPixelHeight] as? Int ?? 0
-        let tiles = OCRTiling.tiles(width: width, height: height, maxSide: maxPixelSize)
+        let tiles = OCRTiling.tiles(width: width, height: height)
 
         guard tiles.count > 1, let full = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
             let options: [CFString: Any] = [
@@ -214,12 +217,15 @@ actor OCRIndexer {
                 kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
                 kCGImageSourceCreateThumbnailWithTransform: true,
             ]
-            return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary).map { [$0] } ?? []
+            let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+            return (image.map { [(CGRect(x: 0, y: 0, width: width, height: height), $0)] } ?? [], height)
         }
-        return tiles.compactMap { rect in
+        let strips = tiles.compactMap { rect -> (rect: CGRect, image: CGImage)? in
             guard let strip = full.cropping(to: rect) else { return nil }
-            return width > maxPixelSize ? scaled(strip, by: Double(maxPixelSize) / Double(width)) : strip
+            let image = width > maxPixelSize ? scaled(strip, by: Double(maxPixelSize) / Double(width)) : strip
+            return image.map { (rect, $0) }
         }
+        return (strips, height)
     }
 
     private static func scaled(_ image: CGImage, by factor: Double) -> CGImage? {

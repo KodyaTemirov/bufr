@@ -26,6 +26,12 @@ struct OCRService: Sendable {
     var languages: [Locale.Language] = [Locale.Language(identifier: "ru-RU"), Locale.Language(identifier: "en-US")]
 
     func recognizeText(in image: CGImage) async throws -> String {
+        OCRTextAssembler.text(from: try await recognizeLines(in: image))
+    }
+
+    /// Recognized lines with their boxes (normalized, bottom-left origin), for callers that
+    /// place lines themselves (long images read in strips).
+    func recognizeLines(in image: CGImage) async throws -> [OCRTextAssembler.Line] {
         let languages = languages
         return try await OCRSerialQueue.shared.run {
             try await Self.retryingOnce {
@@ -69,7 +75,7 @@ struct OCRService: Sendable {
         }
     }
 
-    private static func recognize(_ image: CGImage, languages: [Locale.Language]) async throws -> String {
+    private static func recognize(_ image: CGImage, languages: [Locale.Language]) async throws -> [OCRTextAssembler.Line] {
         var request = RecognizeTextRequest()
         request.recognitionLevel = .accurate
         request.recognitionLanguages = languages
@@ -77,7 +83,7 @@ struct OCRService: Sendable {
         request.usesLanguageCorrection = true
 
         let observations = try await request.perform(on: image)
-        let lines = observations.compactMap { observation -> OCRTextAssembler.Line? in
+        return observations.compactMap { observation -> OCRTextAssembler.Line? in
             guard let text = observation.topCandidates(1).first?.string else { return nil }
             let box = observation.boundingBox
             return OCRTextAssembler.Line(
@@ -85,6 +91,5 @@ struct OCRService: Sendable {
                 box: CGRect(x: box.origin.x, y: box.origin.y, width: box.width, height: box.height)
             )
         }
-        return OCRTextAssembler.text(from: lines)
     }
 }

@@ -78,7 +78,7 @@ struct OCRIndexerTests {
         OCRIndexer(repository: repository, imageStorage: storage, recognize: { _ in
             let number = await calls.increment()
             await RecognitionCounter.uncancellableSleep(delay)
-            return "call \(number)"
+            return [OCRTextAssembler.Line(text: "call \(number)", box: CGRect(x: 0.1, y: 0.5, width: 0.5, height: 0.1))]
         }, pauseBetweenImages: .zero)
     }
 
@@ -128,7 +128,7 @@ struct OCRIndexerTests {
             if number == 1 {
                 await gate.wait()
             }
-            return "call \(number)"
+            return [OCRTextAssembler.Line(text: "call \(number)", box: CGRect(x: 0.1, y: 0.5, width: 0.5, height: 0.1))]
         }, pauseBetweenImages: .zero)
         let item = try await ingestor.ingestImage(.init(data: png(TestImages.cgImage(width: 30, height: 10)), origin: .screenshot))
 

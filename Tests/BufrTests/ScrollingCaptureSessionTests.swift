@@ -7,13 +7,21 @@ final class FakeFrameSource: ScrollFrameSource {
     private(set) var onFrame: (@MainActor (CGImage) -> Void)?
     private(set) var onFailure: (@MainActor (Error) -> Void)?
     private(set) var stopped = false
+    private(set) var events: [String] = []
+    var startDelay: Duration = .zero
 
     func start(onFrame: @escaping @MainActor (CGImage) -> Void, onFailure: @escaping @MainActor (Error) -> Void) async throws {
+        events.append("start")
+        if startDelay > .zero {
+            try? await Task.sleep(for: startDelay)
+        }
         self.onFrame = onFrame
         self.onFailure = onFailure
+        events.append("started")
     }
 
     func stop() async {
+        events.append("stop")
         stopped = true
     }
 
@@ -26,6 +34,9 @@ final class FakeFrameSource: ScrollFrameSource {
 @MainActor
 final class FakeScroller: AutoScrolling {
     var isAvailable = true
+    /// Call number that scrolls `overshoot` times further than asked (app acceleration)
+    var overshootCall: Int?
+    var overshoot = 3
     private(set) var calls = 0
     private(set) var offset = 0
     private let page: CGImage
@@ -40,7 +51,8 @@ final class FakeScroller: AutoScrolling {
 
     func scroll(by points: CGFloat, at point: CGPoint) {
         calls += 1
-        let next = min(page.height - frameHeight, offset + Int(points))
+        let distance = calls == overshootCall ? Int(points) * overshoot : Int(points)
+        let next = max(0, min(page.height - frameHeight, offset + distance))
         guard next != offset else { return }
         offset = next
         source.send(ScrollPages.frame(of: page, offset: offset, height: frameHeight))
@@ -61,12 +73,13 @@ struct ScrollingCaptureSessionTests {
         }
     }
 
-    private func makeSession(page: CGImage) -> (ScrollingCaptureSession, FakeFrameSource, FakeScroller) {
+    private func makeSession(page: CGImage, pointerInRegion: @escaping @MainActor () -> Bool = { true }) -> (ScrollingCaptureSession, FakeFrameSource, FakeScroller) {
         let source = FakeFrameSource()
         let scroller = FakeScroller(page: page, frameHeight: 400, source: source)
         let session = ScrollingCaptureSession(
             region: region, source: source, scroller: scroller,
-            stillFrameTimeout: .milliseconds(60), showsPanels: false
+            stillFrameTimeout: .milliseconds(60), maxSettleWait: .milliseconds(300),
+            showsPanels: false, pointerInRegion: pointerInRegion
         )
         return (session, source, scroller)
     }
@@ -151,5 +164,90 @@ struct ScrollingCaptureSessionTests {
         #expect(scroller.calls == 0)
         session.cancel()
         _ = await run.value
+    }
+
+    /// Review #1: the app scrolled much further than asked; Auto scrolls back and goes on
+    /// with smaller steps instead of losing the rest of the page.
+    @Test func autoRecoversFromAnOvershoot() async throws {
+        let page = ScrollPages.page(height: 1600, seed: 16)
+        let (session, source, scroller) = makeSession(page: page)
+        scroller.overshootCall = 2
+        let run = Task { await session.run() }
+        try await waitUntil { source.onFrame != nil }
+        source.send(ScrollPages.frame(of: page, offset: 0, height: 400))
+        try await waitUntil { session.model.pixelSize.height == 400 }
+
+        session.toggleAuto()
+        for _ in 0..<600 where session.model.isAuto {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        #expect(session.model.hint == .end)
+        session.finish()
+        let image = try #require(await run.value)
+        #expect(ScrollPages.sameRGBA(image, page))
+    }
+
+    /// Review #4: an animation in the region keeps frames coming; Auto still moves on.
+    @Test func autoDoesNotStallOnAnimation() async throws {
+        let page = ScrollPages.textPage(width: 240, height: 400, seed: 17) // nothing to scroll
+        let box = CGRect(x: 20, y: 150, width: 200, height: 40)
+        let (session, source, _) = makeSession(page: page)
+        let run = Task { await session.run() }
+        try await waitUntil { source.onFrame != nil }
+        source.send(ScrollPages.frame(of: page, offset: 0, height: 400, overlays: [.animatedBox(pageRect: box)]))
+        try await waitUntil { session.model.pixelSize.height == 400 }
+        let animation = Task { @MainActor in
+            for index in 1..<400 where !Task.isCancelled {
+                source.send(ScrollPages.frame(of: page, offset: 0, height: 400, overlays: [.animatedBox(pageRect: box)], frameIndex: index))
+                try? await Task.sleep(for: .milliseconds(20))
+            }
+        }
+
+        session.toggleAuto()
+        for _ in 0..<500 where session.model.isAuto {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        animation.cancel()
+
+        #expect(!session.model.isAuto)
+        #expect(session.model.hint == .end)
+        session.cancel()
+        _ = await run.value
+    }
+
+    /// Review #5: scroll events go to whatever is under the pointer.
+    @Test func autoPausesWhenThePointerLeaves() async throws {
+        let page = ScrollPages.page(height: 1600, seed: 18)
+        var inside = true
+        let (session, source, scroller) = makeSession(page: page, pointerInRegion: { inside })
+        let run = Task { await session.run() }
+        try await waitUntil { source.onFrame != nil }
+        source.send(ScrollPages.frame(of: page, offset: 0, height: 400))
+        try await waitUntil { session.model.pixelSize.height == 400 }
+
+        session.toggleAuto()
+        try await waitUntil { scroller.calls == 1 }
+        inside = false
+        try await waitUntil { !session.model.isAuto }
+
+        #expect(session.model.hint == .pointerLeft)
+        #expect(scroller.calls == 1)
+        session.cancel()
+        _ = await run.value
+    }
+
+    /// Review #10: Esc while the stream is still starting must not leave it running.
+    @Test func sourceIsStoppedOnlyAfterItStarted() async throws {
+        let page = ScrollPages.page(height: 1600, seed: 19)
+        let (session, source, _) = makeSession(page: page)
+        source.startDelay = .milliseconds(150)
+        let run = Task { await session.run() }
+        try await waitUntil { source.events.contains("start") }
+
+        session.cancel()
+        _ = await run.value
+
+        #expect(source.events == ["start", "started", "stop"])
     }
 }

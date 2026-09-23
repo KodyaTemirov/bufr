@@ -366,8 +366,9 @@
 "scrolling.auto" = "Авто";
 "scrolling.hint.start" = "Прокрутите область вниз";
 "scrolling.hint.auto" = "Прокручиваю…";
-"scrolling.hint.slower" = "Прокручивайте медленнее";
+"scrolling.hint.slower" = "Прокрутите чуть назад и медленнее";
 "scrolling.hint.end" = "Конец страницы";
 "scrolling.hint.limit" = "Достигнут предел длины";
 "scrolling.autoNeedsAccessibility" = "Для «Авто» нужен Универсальный доступ — открыть настройки";
 "toast.scrollingFailed" = "Скроллинг-захват остановлен";
+"scrolling.hint.pointerLeft" = "«Авто» на паузе: указатель ушёл из области";

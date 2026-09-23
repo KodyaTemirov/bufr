@@ -366,8 +366,9 @@
 "scrolling.auto" = "Auto";
 "scrolling.hint.start" = "Scroll the area down";
 "scrolling.hint.auto" = "Scrolling…";
-"scrolling.hint.slower" = "Scroll a little slower";
+"scrolling.hint.slower" = "Scroll back up a little, then slower";
 "scrolling.hint.end" = "End of the page";
 "scrolling.hint.limit" = "Maximum length reached";
 "scrolling.autoNeedsAccessibility" = "“Auto” needs Accessibility — open settings";
 "toast.scrollingFailed" = "Scrolling capture stopped";
+"scrolling.hint.pointerLeft" = "“Auto” paused: the pointer left the area";

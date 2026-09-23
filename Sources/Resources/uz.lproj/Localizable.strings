@@ -366,8 +366,9 @@
 "scrolling.auto" = "Avto";
 "scrolling.hint.start" = "Hududni pastga aylantiring";
 "scrolling.hint.auto" = "Aylantirilmoqda…";
-"scrolling.hint.slower" = "Sekinroq aylantiring";
+"scrolling.hint.slower" = "Biroz orqaga qayting va sekinroq aylantiring";
 "scrolling.hint.end" = "Sahifa oxiri";
 "scrolling.hint.limit" = "Maksimal uzunlikka yetildi";
 "scrolling.autoNeedsAccessibility" = "«Avto» uchun Universal kirish kerak — sozlamalarni ochish";
 "toast.scrollingFailed" = "Aylantirib suratga olish to'xtadi";
+"scrolling.hint.pointerLeft" = "«Avto» to'xtatildi: ko'rsatkich hududdan chiqdi";

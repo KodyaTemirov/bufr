@@ -42,4 +42,15 @@ struct AutoScrollPolicyTests {
         #expect(policy.record(.limitReached) == .stop)
         #expect(policy.record(.movedUp) == .scrollAgain)
     }
+
+    /// Review #1: a chat pane with a title bar and a composer scrolls only its middle; steps
+    /// follow the part that moves.
+    @Test func stepFollowsTheMovingBand() {
+        var policy = AutoScrollPolicy(regionHeightPoints: 400)
+
+        policy.updateMovingBand(points: 240)
+        #expect(policy.stepPoints == 120)
+        policy.updateMovingBand(points: 400)
+        #expect(policy.stepPoints == 120) // never grows back past a smaller step
+    }
 }

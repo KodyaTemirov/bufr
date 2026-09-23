@@ -152,6 +152,7 @@ struct ScrollingCaptureControls: View {
         case .slower: L10n("scrolling.hint.slower")
         case .end: L10n("scrolling.hint.end")
         case .limit: L10n("scrolling.hint.limit")
+        case .pointerLeft: L10n("scrolling.hint.pointerLeft")
         case .none: model.isAuto ? L10n("scrolling.hint.auto") : L10n("scrolling.hint.start")
         }
     }

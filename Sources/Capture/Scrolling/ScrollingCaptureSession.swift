@@ -10,6 +10,8 @@ final class ScrollingCaptureModel {
         case slower
         case end
         case limit
+        /// "Auto" paused: scroll events would go to whatever the pointer is over now
+        case pointerLeft
         case none
     }
 
@@ -35,8 +37,11 @@ final class ScrollingCaptureSession {
     private let source: ScrollFrameSource
     private let scroller: AutoScrolling
     private let stillFrameTimeout: Duration
+    private let maxSettleWait: Duration
     private let showsPanels: Bool
+    private let pointerInRegion: @MainActor () -> Bool
     private let worker: StitchWorker
+    private var startTask: Task<Void, Never>?
 
     private var continuation: CheckedContinuation<CGImage?, Never>?
     private var ended = false
@@ -45,6 +50,11 @@ final class ScrollingCaptureSession {
 
     private var policy: AutoScrollPolicy
     private var settleTimer: Task<Void, Never>?
+    /// When the current auto step began; its wait for the view to settle is capped
+    private var stepStartedAt = ContinuousClock.now
+    private var autoSteps = 0
+    /// Last forward step, scrolled back after a lost track
+    private var lastForwardStep: CGFloat = 0
     private var movedSinceScroll = false
     private var lostTrackSinceScroll = false
     private var limitReached = false
@@ -58,14 +68,19 @@ final class ScrollingCaptureSession {
         source: ScrollFrameSource,
         scroller: AutoScrolling,
         stillFrameTimeout: Duration = .milliseconds(450),
+        maxSettleWait: Duration = .milliseconds(1500),
         maxHeight: Int = 30_000,
-        showsPanels: Bool = true
+        showsPanels: Bool = true,
+        pointerInRegion: (@MainActor () -> Bool)? = nil
     ) {
         self.region = region
         self.source = source
         self.scroller = scroller
         self.stillFrameTimeout = stillFrameTimeout
+        self.maxSettleWait = maxSettleWait
         self.showsPanels = showsPanels
+        let area = region.cocoaRect
+        self.pointerInRegion = pointerInRegion ?? { area.contains(NSEvent.mouseLocation) }
         self.worker = StitchWorker(maxHeight: maxHeight)
         self.policy = AutoScrollPolicy(regionHeightPoints: region.localRect.height)
     }
@@ -77,9 +92,11 @@ final class ScrollingCaptureSession {
         }
         let image = await withCheckedContinuation { (continuation: CheckedContinuation<CGImage?, Never>) in
             self.continuation = continuation
-            Task { await self.startSource() }
+            startTask = Task { await self.startSource() }
         }
         settleTimer?.cancel()
+        // A stream still starting would otherwise start after this stop and keep running
+        await startTask?.value
         await source.stop()
         dismissUI()
         return image
@@ -120,10 +137,11 @@ final class ScrollingCaptureSession {
         guard !limitReached else { return }
         model.autoUnavailable = false
         model.isAuto = true
-        if model.hint == .end {
+        if model.hint == .end || model.hint == .pointerLeft {
             model.hint = .none
         }
         policy = AutoScrollPolicy(regionHeightPoints: region.localRect.height)
+        autoSteps = 0
         scrollStep()
     }
 
@@ -171,13 +189,17 @@ final class ScrollingCaptureSession {
         model.preview = result.preview
         switch result.step {
         case let .added(rows)?:
+            policy.updateMovingBand(points: CGFloat(result.movingBand) / max(region.pointScale, 1))
             if rows > 0 {
                 movedSinceScroll = true
-                if model.hint != .limit { model.hint = .none }
+                // A late frame must not wipe "paused" or "end of page"
+                if model.hint == .start || model.hint == .slower { model.hint = .none }
             }
         case .lostTrack?:
             lostTrackSinceScroll = true
-            model.hint = .slower
+            if !model.isAuto {
+                model.hint = .slower // "Auto" scrolls back by itself
+            }
         case .limitReached?:
             limitReached = true
             model.hint = .limit
@@ -194,15 +216,38 @@ final class ScrollingCaptureSession {
     }
 
     private func scrollStep() {
+        lastForwardStep = policy.stepPoints
+        scroll(by: lastForwardStep)
+    }
+
+    /// After a lost track: back to where the last stitched frame was, then smaller steps.
+    private func scrollBack() {
+        scroll(by: -lastForwardStep)
+    }
+
+    private func scroll(by points: CGFloat) {
+        // The first step puts the pointer into the region; if the user moved it away since,
+        // the events would scroll something else
+        if autoSteps > 0, !pointerInRegion() {
+            model.isAuto = false
+            model.hint = .pointerLeft
+            settleTimer?.cancel()
+            return
+        }
+        autoSteps += 1
         movedSinceScroll = false
         lostTrackSinceScroll = false
-        scroller.scroll(by: policy.stepPoints, at: scrollPoint)
+        stepStartedAt = .now
+        scroller.scroll(by: points, at: scrollPoint)
         restartSettleTimer()
     }
 
+    /// Waits for the view to settle, but never longer than `maxSettleWait` per step: an
+    /// animation in the region keeps frames coming forever.
     private func restartSettleTimer() {
         settleTimer?.cancel()
-        let delay = stillFrameTimeout
+        let remaining = stepStartedAt + maxSettleWait - ContinuousClock.now
+        let delay = min(stillFrameTimeout, max(.zero, remaining))
         settleTimer = Task { [weak self] in
             try? await Task.sleep(for: delay)
             guard !Task.isCancelled else { return }
@@ -214,7 +259,7 @@ final class ScrollingCaptureSession {
     /// (ScreenCaptureKit sends no frame for an unchanged picture).
     private func settled() {
         guard model.isAuto, !ended else { return }
-        if isProcessing || pendingFrame != nil {
+        if isProcessing || pendingFrame != nil, ContinuousClock.now < stepStartedAt + maxSettleWait {
             restartSettleTimer()
             return
         }
@@ -229,6 +274,8 @@ final class ScrollingCaptureSession {
             step = .noMovement
         }
         switch policy.record(step) {
+        case .scrollAgain where step == .lostTrack:
+            scrollBack()
         case .scrollAgain:
             scrollStep()
         case .reachedEnd:
@@ -301,6 +348,8 @@ actor StitchWorker {
         let width: Int
         let height: Int
         let preview: CGImage?
+        /// Pixels of the view that scroll (without sticky bars)
+        let movingBand: Int
     }
 
     private var stitcher: ScrollStitcher?
@@ -314,10 +363,10 @@ actor StitchWorker {
         guard let stitcher else {
             let first = ScrollStitcher(firstFrame: frame, maxHeight: maxHeight)
             stitcher = first
-            return Result(step: nil, width: first.width, height: first.height, preview: first.preview)
+            return Result(step: nil, width: first.width, height: first.height, preview: first.preview, movingBand: first.movingBandHeight)
         }
         let step = stitcher.append(frame)
-        return Result(step: step, width: stitcher.width, height: stitcher.height, preview: stitcher.preview)
+        return Result(step: step, width: stitcher.width, height: stitcher.height, preview: stitcher.preview, movingBand: stitcher.movingBandHeight)
     }
 
     func compose() -> CGImage? {

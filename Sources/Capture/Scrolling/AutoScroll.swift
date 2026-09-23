@@ -21,6 +21,12 @@ struct AutoScrollPolicy {
         minimumStep = regionHeightPoints / 8
     }
 
+    /// Steps stay within half of the part that actually scrolls (a chat pane between its
+    /// title bar and composer); they never grow back past a step already made smaller.
+    mutating func updateMovingBand(points: CGFloat) {
+        stepPoints = max(minimumStep, min(stepPoints, points / 2))
+    }
+
     mutating func record(_ step: ScrollStitcher.Step) -> Decision {
         switch step {
         case .added:

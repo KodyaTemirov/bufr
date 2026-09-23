@@ -4,40 +4,45 @@ import Foundation
 /// Long images (scrolling captures) are recognized in overlapping strips: shrunk to Vision's
 /// working size as a whole, their letters would become a few pixels tall.
 enum OCRTiling {
-    /// Strips for an image of this pixel size; one strip (the whole image) unless it is taller
-    /// than `maxSide` and at least twice as tall as it is wide.
-    static func tiles(width: Int, height: Int, maxSide: Int = 6144, tileHeight: Int = 4096, overlap: Int = 200) -> [CGRect] {
+    /// Strips for an image of this pixel size: one (the whole image) unless it is taller than
+    /// `maxStrip` and half again as tall as it is wide — Vision misses lines on taller images.
+    static func tiles(width: Int, height: Int, maxStrip: Int = 2048, overlap: Int = 200) -> [CGRect] {
         let whole = CGRect(x: 0, y: 0, width: width, height: height)
-        guard width > 0, height > maxSide, height >= 2 * width else { return [whole] }
+        guard width > 0, height > maxStrip, Double(height) > Double(width) * 1.5 else { return [whole] }
         var tiles: [CGRect] = []
         var y = 0
         while true {
-            let stripHeight = min(tileHeight, height - y)
+            let stripHeight = min(maxStrip, height - y)
             tiles.append(CGRect(x: 0, y: y, width: width, height: stripHeight))
             if y + stripHeight >= height { break }
-            y += tileHeight - overlap
+            y += maxStrip - overlap
         }
         return tiles
     }
 
-    /// Joins the strips' texts; lines a strip repeats from the end of the previous one (they
-    /// were in the overlap) appear once.
-    static func join(_ texts: [String], overlapLines: Int = 6) -> String {
-        var lines: [String] = []
-        for text in texts where !text.isEmpty {
-            let next = text.components(separatedBy: "\n")
-            var repeated = 0
-            for count in stride(from: min(overlapLines, next.count, lines.count), to: 0, by: -1)
-            where next.prefix(count).map(trimmed) == lines.suffix(count).map(trimmed) {
-                repeated = count
-                break
+    /// The text of all strips as one image. A line in the overlap of two strips is read by
+    /// both — possibly differently, if an edge cuts it — so each line is taken from the strip
+    /// on whose side of the overlap's middle its centre lies (where it is whole). Line boxes
+    /// are Vision's: normalized to their strip, bottom-left origin.
+    static func assemble(_ strips: [(rect: CGRect, lines: [OCRTextAssembler.Line])], imageHeight: Int) -> String {
+        guard strips.count > 1 else { return OCRTextAssembler.text(from: strips.first?.lines ?? []) }
+        let height = CGFloat(imageHeight)
+        var kept: [OCRTextAssembler.Line] = []
+        for (index, strip) in strips.enumerated() {
+            let ownTop = index == 0 ? 0 : (strip.rect.minY + strips[index - 1].rect.maxY) / 2
+            let ownBottom = index == strips.count - 1 ? height : (strips[index + 1].rect.minY + strip.rect.maxY) / 2
+            for line in strip.lines {
+                let top = strip.rect.minY + (1 - line.box.maxY) * strip.rect.height
+                let bottom = strip.rect.minY + (1 - line.box.minY) * strip.rect.height
+                let centre = (top + bottom) / 2
+                guard centre >= ownTop, centre < ownBottom else { continue }
+                // Normalized to the whole image, still bottom-left origin
+                kept.append(OCRTextAssembler.Line(
+                    text: line.text,
+                    box: CGRect(x: line.box.minX, y: 1 - bottom / height, width: line.box.width, height: (bottom - top) / height)
+                ))
             }
-            lines.append(contentsOf: next.dropFirst(repeated))
         }
-        return lines.joined(separator: "\n")
-    }
-
-    private static func trimmed(_ line: String) -> String {
-        line.trimmingCharacters(in: .whitespaces)
+        return OCRTextAssembler.text(from: kept)
     }
 }
