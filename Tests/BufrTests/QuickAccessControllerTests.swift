@@ -49,6 +49,14 @@ struct QuickAccessQueueTests {
 
 @MainActor
 struct QuickAccessAutoCloseTests {
+    /// Timers run on the main actor, which a parallel test run can keep busy: wait for the
+    /// outcome instead of a fixed time.
+    private func waitUntilClosed(_ controller: QuickAccessController) async throws {
+        for _ in 0..<300 where !controller.entries.isEmpty {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+    }
+
     private func entry() -> QuickAccessEntry {
         QuickAccessEntry(item: ClipItem(contentType: .image, hash: UUID().uuidString, origin: .screenshot), thumbnail: nil, sourceRect: nil)
     }
@@ -57,7 +65,7 @@ struct QuickAccessAutoCloseTests {
         let controller = QuickAccessController(autoCloseDelay: { .milliseconds(100) })
         controller.add(entry())
 
-        try await Task.sleep(for: .milliseconds(400))
+        try await waitUntilClosed(controller)
 
         #expect(controller.entries.isEmpty)
     }
@@ -72,7 +80,7 @@ struct QuickAccessAutoCloseTests {
         #expect(controller.entries.count == 1)
 
         controller.setHovered(card.id, false)
-        try await Task.sleep(for: .milliseconds(400))
+        try await waitUntilClosed(controller)
         #expect(controller.entries.isEmpty)
     }
 
@@ -97,7 +105,7 @@ struct QuickAccessAutoCloseTests {
         #expect(controller.entries.count == 2)
 
         controller.setHovered(older.id, false)
-        try await Task.sleep(for: .milliseconds(400))
+        try await waitUntilClosed(controller)
         #expect(controller.entries.isEmpty)
     }
 
@@ -111,7 +119,7 @@ struct QuickAccessAutoCloseTests {
         controller.setHovered(newer.id, true)
 
         controller.dismiss(newer.id)
-        try await Task.sleep(for: .milliseconds(400))
+        try await waitUntilClosed(controller)
 
         #expect(controller.entries.isEmpty)
     }
