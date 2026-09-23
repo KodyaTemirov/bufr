@@ -363,3 +363,11 @@
 "editor.share" = "Поделиться…";
 "hotkeys.action.captureScrolling" = "Скроллинг-захват";
 "allInOne.scrolling" = "Прокрутка";
+"scrolling.auto" = "Авто";
+"scrolling.hint.start" = "Прокрутите область вниз";
+"scrolling.hint.auto" = "Прокручиваю…";
+"scrolling.hint.slower" = "Прокручивайте медленнее";
+"scrolling.hint.end" = "Конец страницы";
+"scrolling.hint.limit" = "Достигнут предел длины";
+"scrolling.autoNeedsAccessibility" = "Для «Авто» нужен Универсальный доступ — открыть настройки";
+"toast.scrollingFailed" = "Скроллинг-захват остановлен";

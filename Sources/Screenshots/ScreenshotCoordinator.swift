@@ -27,7 +27,7 @@ final class ScreenshotCoordinator {
     /// After this long without a result, "Recognizing…" tells the user it is working
     var slowRecognitionNoticeDelay: Duration = .milliseconds(600)
 
-    var isCapturing: Bool { session.isActive }
+    var isCapturing: Bool { session.isActive || scrollingSession != nil }
 
     private let settings: ScreenshotSettings
     private let permissions: PermissionsManager
@@ -37,6 +37,7 @@ final class ScreenshotCoordinator {
     private let pasteboard: NSPasteboard
     private let fallbackFolder: URL
     private let session = CaptureSessionController()
+    private var scrollingSession: ScrollingCaptureSession?
 
     init(
         settings: ScreenshotSettings,
@@ -61,6 +62,13 @@ final class ScreenshotCoordinator {
     /// A second request while a selection is on screen cancels it (like pressing the hotkey twice).
     /// Menu items pass `afterMenuCloses` so the menu is gone from the frozen frame.
     func capture(_ mode: CaptureMode, afterMenuCloses: Bool = false) {
+        if let scrollingSession {
+            // Its own shortcut again means Done (a long capture is worth keeping); others wait
+            if mode == .scrolling {
+                scrollingSession.finish()
+            }
+            return
+        }
         if session.isActive {
             session.cancel()
             return
@@ -89,9 +97,13 @@ final class ScreenshotCoordinator {
                     keptWindowIDs: keptWindowIDs()
                 )
                 guard let result = try await session.capture(mode, options: options) else { return }
-                guard case let .image(outcome) = result else {
-                    NSSound.beep() // scrolling capture: connected in the next step
-                    return
+                let outcome: CaptureOutcome
+                switch result {
+                case let .image(image):
+                    outcome = image
+                case let .scrollRegion(region):
+                    guard let long = await recordScrolling(region) else { return }
+                    outcome = long
                 }
                 if mode == .text {
                     await processTextCapture(outcome)
@@ -108,6 +120,24 @@ final class ScreenshotCoordinator {
                 }
             }
         }
+    }
+
+    /// Records the region while the user (or "Auto") scrolls it; nil when cancelled.
+    private func recordScrolling(_ region: ScrollRegion) async -> CaptureOutcome? {
+        let recording = ScrollingCaptureSession(region: region, source: StreamFrameSource(region: region), scroller: SystemAutoScroller())
+        recording.onOpenAccessibility = { [weak self] in self?.permissions.openAccessibilitySettings() }
+        scrollingSession = recording
+        let image = await recording.run()
+        scrollingSession = nil
+        if recording.didFail {
+            notify(L10n("toast.scrollingFailed"), "exclamationmark.triangle")
+        }
+        guard let image else { return nil }
+        return CaptureOutcome(
+            image: image, pointScale: region.pointScale,
+            sourceAppId: region.sourceAppId, sourceAppName: region.sourceAppName,
+            region: nil, screenRect: region.cocoaRect
+        )
     }
 
     /// macOS refused the capture (e.g. the periodic consent alert was declined) even though the
