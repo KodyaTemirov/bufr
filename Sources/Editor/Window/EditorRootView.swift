@@ -70,7 +70,7 @@ struct EditorToolbar: View {
                 EditorIconLabel(systemImage: "square.and.arrow.up")
             }
             .buttonStyle(.plain)
-            .help(L10n("editor.share"))
+            .tooltip(L10n("editor.share"))
             .accessibilityLabel(L10n("editor.share"))
             if let reveal = actions.reveal {
                 EditorIconButton(titleKey: "card.showInFinder", systemImage: "folder", action: reveal)
@@ -166,7 +166,7 @@ private struct EditorColorPalette: View {
                         .contentShape(.circle)
                 }
                 .buttonStyle(.plain)
-                .help("\(index + 1)")
+                .tooltip("\(index + 1)")
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
@@ -202,7 +202,7 @@ private struct EditorWeightPicker: View {
                             .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
-                    .help(index == 0 ? "[" : (index == 2 ? "]" : ""))
+                    .tooltip(index == 0 ? "[" : (index == 2 ? "]" : ""))
                 }
             }
         }
@@ -244,7 +244,7 @@ private struct EditorToolButton: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
-        .help("\(L10n(tool.titleKey)) (\(String(tool.shortcut).uppercased()))")
+        .tooltip("\(L10n(tool.titleKey)) (\(String(tool.shortcut).uppercased()))")
         .accessibilityLabel(L10n(tool.titleKey))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
@@ -260,7 +260,7 @@ private struct EditorIconButton: View {
             EditorIconLabel(systemImage: systemImage)
         }
         .buttonStyle(.plain)
-        .help(L10n(titleKey))
+        .tooltip(L10n(titleKey))
         .accessibilityLabel(L10n(titleKey))
     }
 }

@@ -175,6 +175,68 @@ struct EditorWindowSmokeTests {
         controller.window.close()
     }
 
+    /// The editor usually opens while another app is in front; its tooltips must show anyway.
+    @Test func tooltipsShowWhileBufrIsInactive() async throws {
+        let editor = try await makeEditor()
+
+        #expect(editor.controller.window.allowsToolTipsWhenApplicationIsInactive)
+        editor.controller.window.close()
+    }
+
+    /// Every toolbar button explains itself on hover (native AppKit tooltips).
+    @Test func everyToolbarButtonHasATooltip() async throws {
+        let editor = try await makeEditor()
+        let actions = EditorActions(copy: {}, save: {}, pin: {}, done: {}, reveal: {}, shareFilename: "Shot.png")
+        let host = NSHostingView(rootView: EditorToolbar(model: editor.canvas.model, actions: actions))
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 1200, height: 60), styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false // ARC owns it; a close() release on top would over-release
+        window.contentView = host
+        host.layoutSubtreeIfNeeded()
+        try await Task.sleep(for: .milliseconds(100))
+        host.layoutSubtreeIfNeeded()
+
+        func tooltips(in view: NSView) -> [String] {
+            (view.toolTip.map { [$0] } ?? []) + view.subviews.flatMap(tooltips)
+        }
+        let shown = Set(tooltips(in: host))
+
+        for tool in AnnotationTool.allCases {
+            #expect(shown.contains("\(L10n(tool.titleKey)) (\(String(tool.shortcut).uppercased()))"), "\(tool)")
+        }
+        for key in ["editor.undo", "editor.redo", "card.copy", "editor.share", "card.showInFinder", "card.pin", "common.save"] {
+            #expect(shown.contains(L10n(key)), "\(key)")
+        }
+        window.close()
+        editor.controller.window.close()
+    }
+
+    /// The tooltip layer never takes the button's clicks: AppKit hands them to SwiftUI's
+    /// hosting view, exactly as for a button without a tooltip.
+    @Test func tooltipLayerLetsClicksThrough() async throws {
+        let editor = try await makeEditor()
+        let actions = EditorActions(copy: {}, save: {}, pin: {}, done: {}, reveal: {}, shareFilename: "Shot.png")
+        let host = NSHostingView(rootView: EditorToolbar(model: editor.canvas.model, actions: actions))
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 1200, height: 60), styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false // ARC owns it; a close() release on top would over-release
+        window.contentView = host
+        host.layoutSubtreeIfNeeded()
+        try await Task.sleep(for: .milliseconds(100))
+
+        func findTooltip(_ text: String, in view: NSView) -> NSView? {
+            if view.toolTip == text { return view }
+            for child in view.subviews {
+                if let found = findTooltip(text, in: child) { return found }
+            }
+            return nil
+        }
+        let target = try #require(findTooltip("\(L10n(AnnotationTool.select.titleKey)) (V)", in: host))
+        let center = target.convert(CGPoint(x: target.bounds.midX, y: target.bounds.midY), to: host.superview)
+
+        #expect(host.hitTest(center) === host)
+        window.close()
+        editor.controller.window.close()
+    }
+
     /// Quitting Bufr with unsaved edits stops and asks in that editor instead of losing them.
     @Test func quitIsHeldBackByUnsavedEdits() async throws {
         let clipStore = ClipItemStore(database: try AppDatabase.makeEmpty())

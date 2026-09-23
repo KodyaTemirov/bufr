@@ -44,6 +44,8 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         window.contentViewController = NSHostingController(rootView: EditorRootView(model: model, actions: actions))
         window.title = L10n("editor.title", item.displayTitle)
         window.isReleasedWhenClosed = false
+        // It usually opens while another app is in front (macOS may not activate Bufr)
+        window.allowsToolTipsWhenApplicationIsInactive = true
         window.delegate = self
         window.setContentSize(Self.initialContentSize(for: session.document))
         window.contentMinSize = EditorRootView.minimumSize
