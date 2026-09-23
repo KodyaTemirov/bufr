@@ -140,17 +140,22 @@ struct EditorWindowSmokeTests {
         editor.controller.window.close()
     }
 
-    /// Every toolbar button, Done included, is visible at the smallest window size.
+    /// Both toolbar rows, Done included, fit the smallest window; the main row has large buttons.
     @Test func toolbarFitsTheMinimumWindowWidth() async throws {
         let editor = try await makeEditor()
         editor.canvas.model.tool = .crop
         editor.canvas.mouseDown(with: editor.event(.leftMouseDown, CGPoint(x: 10, y: 10)))
         editor.canvas.mouseDragged(with: editor.event(.leftMouseDragged, CGPoint(x: 200, y: 200)))
-        editor.canvas.mouseUp(with: editor.event(.leftMouseUp, CGPoint(x: 200, y: 200))) // shows "Reset Crop" too
+        editor.canvas.mouseUp(with: editor.event(.leftMouseUp, CGPoint(x: 200, y: 200))) // "Reset Crop" appears
+        editor.canvas.model.tool = .text // the widest options: colours and size
         try await Task.sleep(for: .milliseconds(100))
 
-        let root = NSHostingView(rootView: EditorToolbar(model: editor.canvas.model, actions: EditorActions(copy: {}, save: {}, pin: {}, done: {})))
-        #expect(root.fittingSize.width <= editor.controller.window.contentMinSize.width, "toolbar \(root.fittingSize.width) pt")
+        let minimum = editor.controller.window.contentMinSize.width
+        let tools = NSHostingView(rootView: EditorToolbar(model: editor.canvas.model, actions: EditorActions(copy: {}, save: {}, pin: {}, done: {})))
+        let options = NSHostingView(rootView: EditorToolOptionsBar(model: editor.canvas.model))
+        #expect(tools.fittingSize.width <= minimum, "tools \(tools.fittingSize.width) pt")
+        #expect(options.fittingSize.width <= minimum, "options \(options.fittingSize.width) pt")
+        #expect(tools.fittingSize.height >= 44, "tools row \(tools.fittingSize.height) pt high")
         editor.controller.window.close()
     }
 

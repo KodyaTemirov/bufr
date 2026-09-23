@@ -57,6 +57,33 @@ enum AnnotationTool: String, CaseIterable, Sendable {
 
     var titleKey: String { "editor.tool.\(rawValue)" }
 
+    /// Toolbar order, split where a divider goes: selection, shapes, drawing and text, effects, crop.
+    static let groups: [[AnnotationTool]] = [
+        [.select],
+        [.arrow, .line, .rectangle, .filledRectangle, .ellipse],
+        [.text, .highlighter, .pencil, .counter],
+        [.pixelate, .blur, .spotlight],
+        [.crop],
+    ]
+
+    enum Option: Equatable, Sendable {
+        case color
+        /// Line width of strokes
+        case thickness
+        /// Font size of text and step numbers (the same weight setting)
+        case size
+    }
+
+    /// What the options row offers for this tool: only settings that change what it draws.
+    var options: [Option] {
+        switch self {
+        case .arrow, .line, .rectangle, .ellipse, .pencil: [.color, .thickness]
+        case .filledRectangle, .highlighter: [.color]
+        case .text, .counter: [.color, .size]
+        case .select, .pixelate, .blur, .spotlight, .crop: []
+        }
+    }
+
     static func forShortcut(_ character: Character) -> AnnotationTool? {
         allCases.first { $0.shortcut == character }
     }

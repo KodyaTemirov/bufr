@@ -51,7 +51,7 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
     /// The image at 100% of its point size when it fits, else shrunk to 80% of the screen.
     private static func initialContentSize(for document: AnnotationDocument) -> CGSize {
         let visible = NSScreen.main?.visibleFrame.size ?? CGSize(width: 1440, height: 900)
-        let toolbar: CGFloat = 52
+        let toolbar = EditorRootView.toolbarHeight
         let image = CGSize(width: Double(document.pixelWidth) / document.pointScale + 48,
                            height: Double(document.pixelHeight) / document.pointScale + 48 + toolbar)
         let minimum = EditorRootView.minimumSize
