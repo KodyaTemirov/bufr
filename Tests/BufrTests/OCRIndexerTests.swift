@@ -118,15 +118,24 @@ struct OCRIndexerTests {
     }
 
     /// An image edited (e.g. pixelated) while being recognized must not keep the old image's
-    /// text; it is recognized again.
+    /// text; it is recognized again. The first recognition is held open until the edit is
+    /// made, so the test doesn't depend on timing.
     @Test func resultForAnOutdatedImageIsDropped() async throws {
         let calls = RecognitionCounter()
-        let indexer = fakeIndexer(delay: .milliseconds(200), calls: calls)
+        let gate = RecognitionGate()
+        let indexer = OCRIndexer(repository: repository, imageStorage: storage, recognize: { _ in
+            let number = await calls.increment()
+            if number == 1 {
+                await gate.wait()
+            }
+            return "call \(number)"
+        }, pauseBetweenImages: .zero)
         let item = try await ingestor.ingestImage(.init(data: png(TestImages.cgImage(width: 30, height: 10)), origin: .screenshot))
 
         await indexer.enqueue(item.id)
         await calls.waitForFirstCall()
         _ = try store.applyEdit(id: item.id, hash: "edited", annotationPath: nil, pixelWidth: 30, pixelHeight: 10)
+        await gate.open()
         await indexer.waitUntilIdle()
 
         #expect(try repository.text(for: item.id) == "call 2")
@@ -182,5 +191,22 @@ actor RecognitionCounter {
         await withCheckedContinuation { continuation in
             DispatchQueue.global().asyncAfter(deadline: .now() + seconds) { continuation.resume() }
         }
+    }
+}
+
+/// Holds a fake recognition until the test opens it.
+actor RecognitionGate {
+    private var isOpen = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    func wait() async {
+        guard !isOpen else { return }
+        await withCheckedContinuation { waiters.append($0) }
+    }
+
+    func open() {
+        isOpen = true
+        waiters.forEach { $0.resume() }
+        waiters = []
     }
 }

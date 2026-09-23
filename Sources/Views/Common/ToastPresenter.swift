@@ -8,7 +8,8 @@ enum ToastPresenter {
     private static var panel: NSPanel?
     private static var hideTask: Task<Void, Never>?
 
-    static func show(_ message: String, systemImage: String = "checkmark.circle.fill") {
+    /// Longer messages that ask the user to do something need `duration` to be read.
+    static func show(_ message: String, systemImage: String = "checkmark.circle.fill", duration: Duration = .seconds(1.6)) {
         guard let screen = DisplayInfo.screenUnderMouse() else { return }
 
         let hosting = NSHostingView(rootView: ToastView(message: message, systemImage: systemImage))
@@ -33,7 +34,7 @@ enum ToastPresenter {
 
         hideTask?.cancel()
         hideTask = Task {
-            try? await Task.sleep(for: .seconds(1.6))
+            try? await Task.sleep(for: duration)
             guard !Task.isCancelled else { return }
             await NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0.25

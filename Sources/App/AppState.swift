@@ -272,13 +272,17 @@ final class AppState {
     }
 
     /// Pasting into apps needs Accessibility; without it the item only lands on the clipboard.
-    /// Explain that once.
+    /// Explained once per build (an ad-hoc signed update can drop the grant silently).
     private func hintAccessibilityIfNeeded() {
-        permissions.refresh()
         let defaults = UserDefaults.standard
-        guard !permissions.accessibilityGranted, !defaults.bool(forKey: LaunchNotices.accessibilityHintKey) else { return }
-        defaults.set(true, forKey: LaunchNotices.accessibilityHintKey)
-        ToastPresenter.show(L10n("toast.accessibilityNeeded"), systemImage: "accessibility")
+        let build = LaunchNotices.currentBuild
+        let hinted = defaults.string(forKey: LaunchNotices.accessibilityHintBuildKey)
+        guard hinted != build,
+              LaunchNotices.shouldHintAccessibility(trusted: AXIsProcessTrusted(), hintedForBuild: hinted, currentBuild: build)
+        else { return }
+        defaults.set(build, forKey: LaunchNotices.accessibilityHintBuildKey)
+        permissions.refresh()
+        ToastPresenter.show(L10n("toast.accessibilityNeeded"), systemImage: "accessibility", duration: .seconds(5))
     }
 
     /// Copy without pasting (card context menu, menu bar list).
@@ -343,10 +347,17 @@ final class AppState {
             shownForVersion: defaults.string(forKey: LaunchNotices.setupVersionKey),
             currentVersion: version
         )
-        let hintPermission = LaunchNotices.shouldHintPermissionLost(permissions.screenCapture, showingSetup: showSetup)
+        let build = LaunchNotices.currentBuild
+        let hintPermission = LaunchNotices.shouldHintPermissionLost(
+            permissions.screenCapture,
+            showingSetup: showSetup,
+            hintedForBuild: defaults.string(forKey: LaunchNotices.permissionHintBuildKey),
+            currentBuild: build
+        )
         guard showSetup || hintPermission else { return }
-        if showSetup {
-            defaults.set(version, forKey: LaunchNotices.setupVersionKey)
+        // The assistant marks itself seen when its window is closed
+        if hintPermission {
+            defaults.set(build, forKey: LaunchNotices.permissionHintBuildKey)
         }
 
         Task {

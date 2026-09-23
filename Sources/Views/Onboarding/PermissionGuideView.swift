@@ -75,6 +75,7 @@ final class PermissionGuideWindowController {
     func show() {
         presenter.show(title: L10n("permission.guide.title")) { close in
             PermissionGuideView(onClose: close)
+                .environment(AppState.shared)
         }
     }
 }

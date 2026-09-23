@@ -7,16 +7,23 @@ import SwiftUI
 final class SingleWindowPresenter {
     private var window: NSWindow?
     private var closeObserver: NSObjectProtocol?
+    private var onClose: () -> Void = {}
+    private let present: @MainActor (NSWindow) -> Void
 
-    func show(title: String, @ViewBuilder content: (_ close: @escaping () -> Void) -> some View) {
+    init(present: @escaping @MainActor (NSWindow) -> Void = { AppActivation.present($0) }) {
+        self.present = present
+    }
+
+    /// `onClose` runs when the user closes the window (not when the app quits).
+    func show(title: String, onClose: @escaping () -> Void = {}, @ViewBuilder content: (_ close: @escaping () -> Void) -> some View) {
         if let window {
             window.title = title
-            AppActivation.present(window)
+            present(window)
             return
         }
 
-        let root = content { [weak self] in self?.window?.close() }
-            .environment(AppState.shared)
+        self.onClose = onClose
+        let root = content { [weak self] in self?.close() }
         let window = NSWindow(contentViewController: NSHostingController(rootView: root))
         window.styleMask = [.titled, .closable]
         window.title = title
@@ -30,7 +37,11 @@ final class SingleWindowPresenter {
             }
         }
         self.window = window
-        AppActivation.present(window)
+        present(window)
+    }
+
+    func close() {
+        window?.close()
     }
 
     private func windowWillClose() {
@@ -39,5 +50,8 @@ final class SingleWindowPresenter {
         }
         closeObserver = nil
         window = nil
+        let onClose = onClose
+        self.onClose = {}
+        onClose()
     }
 }

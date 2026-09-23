@@ -94,13 +94,38 @@ struct ScreenshotSetupView: View {
 final class ScreenshotSetupWindowController {
     static let shared = ScreenshotSetupWindowController()
 
-    private let presenter = SingleWindowPresenter()
+    private let presenter: SingleWindowPresenter
+    private let defaults: UserDefaults
+    private let version: String?
+    private let makeView: (@escaping () -> Void) -> AnyView
 
-    private init() {}
+    init(
+        presenter: SingleWindowPresenter = SingleWindowPresenter(),
+        defaults: UserDefaults = .standard,
+        version: String? = AppVersion.current?.description,
+        makeView: @escaping (@escaping () -> Void) -> AnyView = { close in
+            AnyView(ScreenshotSetupView(onClose: close).environment(AppState.shared))
+        }
+    ) {
+        self.presenter = presenter
+        self.defaults = defaults
+        self.version = version
+        self.makeView = makeView
+    }
 
     func show() {
-        presenter.show(title: L10n("setup.title")) { close in
-            ScreenshotSetupView(onClose: close)
+        let defaults = defaults
+        let version = version
+        presenter.show(title: L10n("setup.title"), onClose: {
+            if let version {
+                LaunchNotices.markSetupSeen(version: version, in: defaults)
+            }
+        }) { close in
+            makeView(close)
         }
+    }
+
+    func close() {
+        presenter.close()
     }
 }
